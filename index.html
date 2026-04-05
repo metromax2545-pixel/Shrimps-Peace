@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Shrimps & Peace — Медитация в океане</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body {
+            background: linear-gradient(145deg, #0A2F2A 0%, #0B3E32 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 16px;
+            min-height: 100vh;
+        }
+        .app {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #FFF8E6;
+            border-radius: 48px;
+            padding: 20px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-weight: 800;
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, #E35F2E, #D4AF37);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .btn-wallet {
+            background: #1F3D33;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: bold;
+            color: #FFE5B4;
+            cursor: pointer;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #1F3D33;
+            border-radius: 28px;
+            padding: 12px 8px;
+            text-align: center;
+            color: #FFE5B4;
+            cursor: pointer;
+        }
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #D4AF37;
+        }
+        .meditation-area {
+            background: radial-gradient(circle at 30% 30%, #FFA56E, #E35F2E);
+            border-radius: 48px;
+            padding: 28px 16px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .meditation-area:active { transform: scale(0.98); }
+        .shrimp-zen {
+            font-size: 80px;
+            filter: drop-shadow(2px 4px 8px rgba(0,0,0,0.2));
+        }
+        .click-value {
+            font-size: 14px;
+            background: rgba(0,0,0,0.5);
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 40px;
+            margin-top: 8px;
+            color: #FFD966;
+        }
+        .shrimps-section {
+            margin: 24px 0;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-weight: bold;
+            color: #1F3D33;
+        }
+        .shrimp-card {
+            background: #2A5343;
+            border-radius: 28px;
+            padding: 14px;
+            margin-bottom: 12px;
+            color: white;
+        }
+        .empty-slot {
+            background: #3A5A4A;
+            border: 2px dashed #D4AF37;
+            border-radius: 28px;
+            padding: 18px;
+            text-align: center;
+            margin-bottom: 12px;
+            color: #FFE5B4;
+        }
+        .progress-bar {
+            background: #4F7B66;
+            border-radius: 20px;
+            height: 8px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: #D4AF37;
+            width: 0%;
+            height: 100%;
+        }
+        .shop-grid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+        .shop-item {
+            background: #E8DFCA;
+            border-radius: 28px;
+            padding: 12px;
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-weight: bold;
+        }
+        .shop-item:active { transform: scale(0.96); background: #D4CFB5; }
+        button {
+            background: #D4AF37;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .footer-note {
+            font-size: 10px;
+            text-align: center;
+            color: #6B8A7A;
+            margin-top: 20px;
+        }
+        .wallet-hash {
+            font-size: 11px;
+            background: #1F3D33;
+            padding: 4px 12px;
+            border-radius: 20px;
+            color: #D4AF37;
+        }
+        .status-badge {
+            font-size: 10px;
+            background: #2A5343;
+            padding: 4px 8px;
+            border-radius: 16px;
+            color: #FFE5B4;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="logo">🦐 SHRIMPS & PEACE</div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button class="btn-wallet" id="connectBtn">🔌 Axiome Wallet</button>
+            <span class="wallet-hash" id="walletAddr"></span>
+            <span class="status-badge" id="connectionStatus">⭕ Не подключён</span>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">🦐 SHRIM<br><span class="stat-value" id="shrimBalance">0</span></div>
+        <div class="stat-card">🧘 PEACE<br><span class="stat-value" id="clickCount">0</span><br><span style="font-size:10px">нажатий</span></div>
+        <div class="stat-card">🐚 СЛОТЫ<br><span class="stat-value" id="slotInfo">1/5</span></div>
+    </div>
+
+    <div class="meditation-area" id="meditationBtn">
+        <div class="shrimp-zen">🦐</div>
+        <div class="click-value">Нажми на креветку! +1 SHRIM</div>
+    </div>
+
+    <div class="shrimps-section">
+        <div class="section-header">
+            <span>🐣 МОИ КРЕВЕТКИ (рост до 5 уровня)</span>
+        </div>
+        <div id="shrimpsList"></div>
+    </div>
+
+    <div class="shop-grid">
+        <div class="shop-item" id="buyShrimpBtn">🦐 Новая креветка<br>1 SHRIM</div>
+        <div class="shop-item" id="buySlotBtn">🐚 Новый слот<br><span id="slotPrice">10</span> SHRIM</div>
+    </div>
+
+    <div class="footer-note">
+        🧘 1 нажатие = 1 SHRIM<br>
+        📈 На 1 уровень нужно 60 нажатий<br>
+        🎁 При 5 уровне — бонус 30 SHRIM<br>
+        💰 Всего на прокачку: 300 SHRIM → доход 330 SHRIM
+    </div>
+</div>
+
+<script>
+    // ========== КОНФИГУРАЦИЯ ==========
+    const CONFIG = {
+        connectApi: "https://api-idx.axiomechain.pro/connect",
+        chainApi: "https://api-chain.axiomechain.org",
+        shrimContract: "axm13falgv7wf8v3pqcwhr7suvm8e8j0hu03fjmtwrh2vek2589tdazq5p0atj",
+        decimals: 6,
+        clicksPerLevel: 60,
+        maxLevel: 5,
+        bonusReward: 30,
+        maxSlots: 5
+    };
+    
+    let userAddress = null;
+    let connectToken = null;
+    let pollInterval = null;
+    let shrimBalance = 0;
+    let shrimps = [];
+    let slots = 1;
+    
+    // ========== ПОДКЛЮЧЕНИЕ AXIOME WALLET ==========
+    async function connectWallet() {
+        try {
+            const createResponse = await fetch(`${CONFIG.connectApi}/create_token`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const createData = await createResponse.json();
+            connectToken = createData.token;
+            
+            if (!connectToken) {
+                throw new Error("Не удалось создать токен подключения");
+            }
+            
+            localStorage.setItem('axiome_connect_token', connectToken);
+            
+            const deeplink = `axiomewallet://connect?token=${connectToken}&callback=${encodeURIComponent(window.location.href)}`;
+            window.location.href = deeplink;
+            
+            startPollingConnection();
+            
+        } catch(e) {
+            console.error("Connection error:", e);
+            alert("Ошибка подключения: " + e.message + "\n\nУбедитесь, что Axiome Wallet установлен.");
+        }
+    }
+    
+    function startPollingConnection() {
+        if (pollInterval) clearInterval(pollInterval);
+        
+        pollInterval = setInterval(async () => {
+            if (!connectToken) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.connectApi}/get_token_info`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: connectToken })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'connected' && data.account) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    
+                    userAddress = data.account;
+                    localStorage.setItem('shrims_userAddress', userAddress);
+                    localStorage.removeItem('axiome_connect_token');
+                    
+                    document.getElementById('walletAddr').innerText = userAddress.slice(0,6)+'…'+userAddress.slice(-4);
+                    document.getElementById('connectBtn').innerHTML = "✅ Подключён";
+                    document.getElementById('connectionStatus').innerHTML = "🟢 Axiome Wallet";
+                    document.getElementById('connectionStatus').style.background = "#1F8A4C";
+                    
+                    await initGame();
+                } else if (data.status === 'error') {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    alert("Ошибка подключения: " + (data.message || "Неизвестная ошибка"));
+                }
+                
+            } catch(e) {
+                console.warn("Polling error:", e);
+            }
+        }, 2000);
+        
+        setTimeout(() => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+                if (!userAddress) {
+                    alert("Время подключения истекло. Попробуйте снова.");
+                }
+            }
+        }, 60000);
+    }
+    
+    // ========== ЗАГРУЗКА БАЛАНСА ==========
+    async function fetchShrimBalance() {
+        if (!userAddress) return;
+        
+        try {
+            const query = { balance: { address: userAddress } };
+            const base64Query = btoa(JSON.stringify(query));
+            
+            const response = await fetch(`${CONFIG.chainApi}/cosmwasm/wasm/v1/contract/${CONFIG.shrimContract}/smart/${base64Query}`);
+            const data = await response.json();
+            
+            if (data && data.data && data.data.balance) {
+                shrimBalance = parseInt(data.data.balance) / Math.pow(10, CONFIG.decimals);
+                document.getElementById('shrimBalance').innerText = shrimBalance.toFixed(4);
+            }
+        } catch(e) {
+            console.warn("Balance fetch failed:", e);
+        }
+    }
+    
+    // ========== ИГРОВЫЕ МЕХАНИКИ ==========
+    function handleClick() {
+        if (!userAddress) {
+            alert("Подключите Axiome Wallet");
+            return;
+        }
+        
+        // +1 SHRIM за нажатие
+        shrimBalance += 1;
+        saveGameState();
+        updateUI();
+        
+        // Визуальный эффект
+        const shrimp = document.getElementById('meditationBtn');
+        shrimp.style.transform = 'scale(0.96)';
+        setTimeout(() => shrimp.style.transform = '', 100);
+        
+        // Плавающий текст
+        const floatDiv = document.createElement('div');
+        floatDiv.innerText = '+1 SHRIM';
+        floatDiv.style.cssText = 'position:fixed;left:50%;bottom:40%;transform:translateX(-50%);color:#D4AF37;font-weight:bold;font-size:20px;background:rgba(0,0,0,0.7);padding:4px 12px;border-radius:40px;pointer-events:none;z-index:1000';
+        document.body.appendChild(floatDiv);
+        setTimeout(() => floatDiv.remove(), 500);
+        
+        // Обновляем счётчик нажатий для активной креветки
+        updateClickCounter();
+    }
+    
+    function updateClickCounter() {
+        // Находим первую незавершённую креветку
+        for (let i = 0; i < shrimps.length; i++) {
+            const shrimp = shrimps[i];
+            if (shrimp && shrimp.level < CONFIG.maxLevel && !shrimp.completed) {
+                shrimp.clicks = (shrimp.clicks || 0) + 1;
+                
+                if (shrimp.clicks >= CONFIG.clicksPerLevel) {
+                    // Переход на следующий уровень
+                    shrimp.level++;
+                    shrimp.clicks = 0;
+                    
+                    if (shrimp.level >= CONFIG.maxLevel) {
+                        // Креветка достигла 5 уровня
+                        shrimp.completed = true;
+                        const reward = CONFIG.bonusReward;
+                        shrimBalance += reward;
+                        alert(`🕊️ Креветка ${i+1} достигла Нирваны!\n+${reward} SHRIM бонус!`);
+                    } else {
+                        alert(`🦐 Креветка ${i+1} достигла ${shrimp.level} уровня!`);
+                    }
+                }
+                
+                saveGameState();
+                updateUI();
+                break;
+            }
+        }
+    }
+    
+    function buyShrimp() {
+        if (!userAddress) { alert("Подключите Axiome Wallet"); return; }
+        const activeCount = shrimps.filter(s => s !== null).length;
+        if (activeCount >= slots) { alert("Нет свободных слотов. Купите новый слот."); return; }
+        if (shrimBalance < 1) { alert("Нужен 1 SHRIM"); return; }
+        
+        shrimBalance -= 1;
+        shrimps.push({ level: 1, clicks: 0, completed: false });
+        saveGameState();
+        updateUI();
+        alert("🦐 Новая креветка! Нажимайте на медитацию, чтобы кормить её.");
+    }
+    
+    function buySlot() {
+        if (!userAddress) { alert("Подключите Axiome Wallet"); return; }
+        if (slots >= CONFIG.maxSlots) { alert("Максимум слотов"); return; }
+        const price = 10 + (slots - 1) * 10;
+        if (shrimBalance < price) { alert(`Нужно ${price} SHRIM`); return; }
+        
+        shrimBalance -= price;
+        slots++;
+        saveGameState();
+        updateUI();
+        alert(`🐚 Новый слот! Теперь ${slots}/${CONFIG.maxSlots} слотов.`);
+    }
+    
+    // ========== СОХРАНЕНИЕ ==========
+    function saveGameState() {
+        if (!userAddress) return;
+        const data = { shrimBalance, shrims, slots };
+        localStorage.setItem(`shrims_${userAddress}`, JSON.stringify(data));
+    }
+    
+    function loadGameState() {
+        if (!userAddress) return;
+        const saved = localStorage.getItem(`shrims_${userAddress}`);
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                shrimBalance = data.shrimBalance || 0;
+                shrims = data.shrims || [];
+                slots = data.slots || 1;
+            } catch(e) {}
+        }
+        if (shrims.length === 0) shrims = [];
+        while (shrims.length > slots) shrims.pop();
+    }
+    
+    // ========== ОБНОВЛЕНИЕ UI ==========
+    function updateUI() {
+        document.getElementById('shrimBalance').innerText = shrimBalance.toFixed(4);
+        
+        const activeCount = shrims.filter(s => s !== null).length;
+        document.getElementById('slotInfo').innerText = `${activeCount}/${slots}`;
+        
+        // Общий счётчик нажатий для активной креветки
+        let totalClicks = 0;
+        for (const shrimp of shrimps) {
+            if (shrimp && shrimp.level < CONFIG.maxLevel && !shrimp.completed) {
+                totalClicks = shrimp.clicks || 0;
+                break;
+            }
+        }
+        document.getElementById('clickCount').innerText = totalClicks;
+        
+        const nextSlotPrice = 10 + (slots - 1) * 10;
+        document.getElementById('slotPrice').innerText = nextSlotPrice;
+        
+        const container = document.getElementById('shrimpsList');
+        container.innerHTML = '';
+        
+        for (let i = 0; i < slots; i++) {
+            const shrimp = shrimps[i];
+            if (!shrimp) {
+                container.innerHTML += `<div class="empty-slot">🐚 Слот ${i+1} свободен. Купите креветку за 1 SHRIM</div>`;
+            } else {
+                const percent = ((shrimp.level - 1) * CONFIG.clicksPerLevel + (shrimp.clicks || 0)) / (CONFIG.maxLevel * CONFIG.clicksPerLevel) * 100;
+                const neededClicks = CONFIG.clicksPerLevel - (shrimp.clicks || 0);
+                
+                if (shrimp.completed) {
+                    container.innerHTML += `
+                        <div class="shrimp-card">
+                            🕊️ Креветка ${i+1}<br>
+                            Уровень ${shrimp.level}/${CONFIG.maxLevel} — Достигла Нирваны!<br>
+                            <small>Бонус получен: +${CONFIG.bonusReward} SHRIM</small>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML += `
+                        <div class="shrimp-card">
+                            🦐 Креветка ${i+1}<br>
+                            Уровень ${shrimp.level}/${CONFIG.maxLevel}<br>
+                            До следующего уровня: ${neededClicks} нажатий<br>
+                            <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%;"></div></div>
+                            ${shrimp.level >= CONFIG.maxLevel ? '<small>🎉 Достигнута Нирвана! Нажмите для получения бонуса</small>' : ''}
+                        </div>
+                    `;
+                }
+            }
+        }
+    }
+    
+    async function initGame() {
+        if (!userAddress) return;
+        await fetchShrimBalance();
+        loadGameState();
+        updateUI();
+    }
+    
+    async function checkSavedConnection() {
+        const savedAddress = localStorage.getItem('shrims_userAddress');
+        if (savedAddress && savedAddress.startsWith('axm1')) {
+            userAddress = savedAddress;
+            document.getElementById('walletAddr').innerText = userAddress.slice(0,6)+'…'+userAddress.slice(-4);
+            document.getElementById('connectBtn').innerHTML = "✅ Подключён";
+            document.getElementById('connectionStatus').innerHTML = "🟢 Axiome Wallet";
+            await initGame();
+        }
+    }
+    
+    // ========== ЗАПУСК ==========
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const resultToken = urlParams.get('token');
+    if (resultToken) {
+        connectToken = resultToken;
+        startPollingConnection();
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    checkSavedConnection();
+    
+    document.getElementById('connectBtn').onclick = connectWallet;
+    document.getElementById('meditationBtn').onclick = handleClick;
+    document.getElementById('buyShrimpBtn').onclick = buyShrimp;
+    document.getElementById('buySlotBtn').onclick = buySlot;
+</script>
+</body>
+</html>
