@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Shrimps & Peace — Медитация в океане</title>
+    <title>Shrimps & Peace</title>
     <style>
         * {
             margin: 0;
@@ -11,23 +11,20 @@
             box-sizing: border-box;
             user-select: none;
         }
-
         body {
             background: linear-gradient(145deg, #0A2F2A 0%, #0B3E32 100%);
             font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
             padding: 16px;
             min-height: 100vh;
         }
-
         .app {
             max-width: 500px;
             margin: 0 auto;
             background: #FFF8E6;
             border-radius: 48px;
             padding: 20px;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
         }
-
         .header {
             display: flex;
             justify-content: space-between;
@@ -36,7 +33,6 @@
             flex-wrap: wrap;
             gap: 12px;
         }
-
         .logo {
             font-weight: 800;
             font-size: 1.3rem;
@@ -45,20 +41,21 @@
             background-clip: text;
             color: transparent;
         }
-
+        .user-id {
+            background: #1F3D33;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 11px;
+            color: #D4AF37;
+            font-family: monospace;
+        }
         .wallet-section {
             background: #E8DFCA;
             border-radius: 28px;
             padding: 16px;
             margin-bottom: 20px;
+            text-align: center;
         }
-
-        .wallet-label {
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #1F3D33;
-        }
-
         .btn-connect {
             background: #D4AF37;
             border: none;
@@ -70,7 +67,6 @@
             width: 100%;
             font-size: 16px;
         }
-
         .qr-container {
             text-align: center;
             margin-top: 15px;
@@ -79,45 +75,21 @@
             border-radius: 28px;
             display: none;
         }
-
         .qr-code {
-            width: 200px;
-            height: 200px;
+            width: 160px;
+            height: 160px;
             margin: 10px auto;
         }
-
-        .deeplink-text {
-            font-size: 10px;
-            word-break: break-all;
-            background: #E8DFCA;
-            padding: 8px;
-            border-radius: 16px;
-            margin-top: 10px;
-        }
-
-        .btn-copy {
-            background: #1F3D33;
-            color: #FFE5B4;
+        .btn-back {
+            background: #E35F2E;
+            color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 8px 20px;
             border-radius: 40px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
         }
-
-        .wallet-address {
-            font-family: monospace;
-            background: #FFF8E6;
-            padding: 10px;
-            border-radius: 28px;
-            margin: 10px 0;
-            word-break: break-all;
-            text-align: center;
-            font-size: 12px;
-            display: none;
-        }
-
         .status-badge {
             font-size: 10px;
             background: #2A5343;
@@ -127,14 +99,12 @@
             display: inline-block;
             margin-top: 10px;
         }
-
         .stats {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             margin-bottom: 24px;
         }
-
         .stat-card {
             background: #1F3D33;
             border-radius: 28px;
@@ -142,17 +112,14 @@
             text-align: center;
             color: #FFE5B4;
         }
-
         .stat-value {
             font-size: 1.6rem;
             font-weight: bold;
             color: #D4AF37;
         }
-
         .shrimps-section {
             margin: 10px 0 24px;
         }
-
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -160,7 +127,6 @@
             font-weight: bold;
             color: #1F3D33;
         }
-
         .slots-container {
             display: flex;
             overflow-x: auto;
@@ -168,7 +134,6 @@
             padding-bottom: 8px;
             scrollbar-width: thin;
         }
-
         .slot-card {
             min-width: 260px;
             background: #2A5343;
@@ -176,7 +141,6 @@
             padding: 14px;
             color: white;
         }
-
         .empty-slot {
             min-width: 260px;
             background: #3A5A4A;
@@ -186,7 +150,6 @@
             text-align: center;
             color: #FFE5B4;
         }
-
         .progress-bar {
             background: #4F7B66;
             border-radius: 20px;
@@ -194,26 +157,22 @@
             margin-top: 8px;
             overflow: hidden;
         }
-
         .progress-fill {
             background: #D4AF37;
             width: 0%;
             height: 100%;
             transition: width 0.3s;
         }
-
         .invested-text {
             font-size: 11px;
             color: #FFD966;
             margin-top: 5px;
         }
-
         .timer-text {
             font-size: 11px;
             color: #FFD966;
             margin-top: 5px;
         }
-
         .ready-badge {
             background: #D4AF37;
             color: #1F3D33;
@@ -223,13 +182,11 @@
             display: inline-block;
             margin-bottom: 6px;
         }
-
         .shrimp-actions {
             display: flex;
             gap: 8px;
             margin-top: 12px;
         }
-
         .btn-feed {
             background: #3B7A5C;
             color: white;
@@ -240,12 +197,10 @@
             font-size: 12px;
             flex: 1;
         }
-
         .btn-feed:disabled {
             background: #6B8A7A;
             cursor: not-allowed;
         }
-
         .btn-sell {
             background: #E35F2E;
             color: white;
@@ -256,14 +211,12 @@
             font-size: 12px;
             flex: 1;
         }
-
         .shop-grid {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
             margin: 16px 0;
         }
-
         .shop-item {
             background: #E8DFCA;
             border-radius: 28px;
@@ -274,18 +227,15 @@
             transition: all 0.1s;
             font-weight: bold;
         }
-
         .shop-item:active {
             transform: scale(0.96);
             background: #D4CFB5;
         }
-
         .action-buttons {
             display: flex;
             gap: 12px;
             margin: 16px 0;
         }
-
         .btn-withdraw {
             background: #E35F2E;
             color: white;
@@ -296,7 +246,6 @@
             cursor: pointer;
             flex: 1;
         }
-
         .reserve-info {
             background: #1F3D33;
             border-radius: 28px;
@@ -306,7 +255,6 @@
             text-align: center;
             color: #FFE5B4;
         }
-
         .instruction {
             background: #E8DFCA;
             border-radius: 28px;
@@ -316,12 +264,14 @@
             text-align: center;
             color: #1F3D33;
         }
-
         .footer-note {
             font-size: 10px;
             text-align: center;
             color: #6B8A7A;
             margin-top: 20px;
+        }
+        .hidden {
+            display: none;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs2-fix@0.0.1/qrcode.min.js"></script>
@@ -330,6 +280,7 @@
 <div class="app">
     <div class="header">
         <div class="logo">🦐 SHRIMPS & PEACE</div>
+        <div class="user-id" id="userIdDisplay">👤 Загрузка...</div>
     </div>
 
     <div class="wallet-section">
@@ -337,10 +288,8 @@
         <button class="btn-connect" id="connectBtn">📱 Подключить кошелёк</button>
         <div id="qrContainer" class="qr-container">
             <div id="qrCode" class="qr-code"></div>
-            <div class="deeplink-text" id="deeplinkText"></div>
-            <button class="btn-copy" id="copyBtn">📋 Скопировать ссылку</button>
+            <button class="btn-back" id="backBtn">◀ Назад</button>
         </div>
-        <div id="walletAddressDisplay" class="wallet-address"></div>
         <div id="connectionStatus" class="status-badge">⭕ Не подключён</div>
     </div>
 
@@ -374,21 +323,18 @@
         📱 <strong>КАК ПОДКЛЮЧИТЬ КОШЕЛЁК:</strong><br>
         1. Нажмите "Подключить кошелёк"<br>
         2. Отсканируйте QR-код в Axiome Wallet<br>
-        3. Или скопируйте ссылку и вставьте в приложение<br>
-        4. Подтвердите подключение
+        3. Подтвердите подключение
     </div>
 
     <div class="footer-note">
         🧘 1 нажатие = тратится 1 SHRIM<br>
         📈 60 нажатий = +1 уровень → дзен 24 часа<br>
         🎁 На 5 уровне — бонус +30 SHRIM<br>
-        💰 Продажа креветки 5 уровня: 330 SHRIM<br>
-        💸 Вывод средств на кошелёк — с подтверждением транзакции
+        💰 Продажа креветки 5 уровня: 330 SHRIM
     </div>
 </div>
 
 <script>
-    // ========== КОНФИГУРАЦИЯ ==========
     const CONFIG = {
         chainApi: "https://api-chain.axiomechain.org",
         shrimContract: "axm13falgv7wf8v3pqcwhr7suvm8e8j0hu03fjmtwrh2vek2589tdazq5p0atj",
@@ -402,79 +348,54 @@
     };
 
     let userAddress = null;
+    let telegramUserId = null;
     let shrimBalance = 0;
     let reserveBalance = 0;
     let shrimps = [];
     let slots = 1;
     let timerInterval = null;
 
-    // ========== ОЧИСТКА ВСЕХ ДАННЫХ ==========
-    function resetAllData() {
-        // Очищаем localStorage
-        localStorage.clear();
-        
-        // Сбрасываем переменные
-        userAddress = null;
-        shrimBalance = 0;
-        reserveBalance = 0;
-        shrimps = [];
-        slots = 1;
-        
-        // Сбрасываем отображение
-        document.getElementById('walletAddressDisplay').style.display = 'none';
-        document.getElementById('connectionStatus').innerHTML = "⭕ Не подключён";
-        document.getElementById('connectionStatus').style.background = "#2A5343";
-        document.getElementById('connectBtn').innerHTML = "📱 Подключить кошелёк";
-        document.getElementById('connectBtn').disabled = false;
-        document.getElementById('qrContainer').style.display = 'none';
-        
-        // Обновляем UI
-        updateUI();
-        
-        console.log("Все данные игры обнулены");
-        alert("🧘 Игра обнулена! Начинайте с чистого листа.");
+    // ========== TELEGRAM ID ==========
+    function getTelegramUserId() {
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            const initData = tg.initDataUnsafe;
+            if (initData && initData.user && initData.user.id) {
+                return initData.user.id.toString();
+            }
+        }
+        let savedId = localStorage.getItem('shrims_telegram_id');
+        if (!savedId) {
+            savedId = 'user_' + Math.random().toString(36).substr(2, 8);
+            localStorage.setItem('shrims_telegram_id', savedId);
+        }
+        return savedId;
     }
 
-    // ========== AXIOME CONNECT ==========
-    function generateAxiomeConnect() {
-        const payload = {
-            type: "get_account",
-            chainId: "2024",
-            callback: window.location.href.split('?')[0]
-        };
-        const base64Payload = btoa(JSON.stringify(payload));
-        return `axiomesign://${base64Payload}`;
-    }
-
+    // ========== КОРОТКИЙ QR (только адрес игры) ==========
     function showQRCode() {
-        const deeplink = generateAxiomeConnect();
+        const gameUrl = window.location.href.split('?')[0];
         const container = document.getElementById('qrContainer');
         const qrDiv = document.getElementById('qrCode');
-        const deeplinkSpan = document.getElementById('deeplinkText');
 
         qrDiv.innerHTML = '';
         new QRCode(qrDiv, {
-            text: deeplink,
-            width: 200,
-            height: 200,
+            text: gameUrl,
+            width: 160,
+            height: 160,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
         });
 
-        deeplinkSpan.innerText = deeplink;
         container.style.display = 'block';
-        window.currentDeeplink = deeplink;
     }
 
-    function copyDeeplink() {
-        if (window.currentDeeplink) {
-            navigator.clipboard.writeText(window.currentDeeplink);
-            alert("✅ Ссылка скопирована! Вставьте её в Axiome Connect.");
-        }
+    function hideQRCode() {
+        document.getElementById('qrContainer').style.display = 'none';
     }
 
-    // ========== ЗАГРУЗКА БАЛАНСОВ ИЗ БЛОКЧЕЙНА ==========
+    // ========== ЗАГРУЗКА БАЛАНСОВ ==========
     async function fetchShrimBalance() {
         if (!userAddress) return;
         try {
@@ -522,12 +443,12 @@
         const now = Math.floor(Date.now() / 1000);
         if (shrimp.zenUntil && shrimp.zenUntil > now) {
             const left = Math.ceil((shrimp.zenUntil - now) / 3600);
-            alert(`Креветка в дзене! Осталось ${left} ч.`);
+            alert(`Дзен: ${left} ч`);
             return;
         }
 
         if (shrimBalance < 1) {
-            alert("Недостаточно SHRIM для кормления!");
+            alert("Недостаточно SHRIM!");
             return;
         }
 
@@ -545,15 +466,12 @@
                 shrimp.completed = true;
                 reserveBalance -= CONFIG.bonusReward;
                 shrimBalance += CONFIG.bonusReward;
-                alert(`🕊️ Креветка ${index + 1} достигла Нирваны!\n+${CONFIG.bonusReward} SHRIM бонус!`);
-            } else {
-                alert(`🦐 Креветка ${index + 1} достигла ${shrimp.level} уровня!\n🧘 Дзен 24 ч.`);
+                alert(`+${CONFIG.bonusReward} SHRIM`);
             }
         }
 
         saveGameState();
         updateUI();
-        showFloatingEffect('-1 SHRIM', '#FFA56E');
     }
 
     function buyShrimp() {
@@ -562,7 +480,7 @@
             return;
         }
         if (shrimps.length >= slots) {
-            alert("Нет свободных слотов. Купите новый слот.");
+            alert("Нет свободных слотов");
             return;
         }
         if (shrimBalance < 1) {
@@ -575,7 +493,7 @@
         shrimps.push({ level: 1, clicks: 0, completed: false, zenUntil: null, invested: 0 });
         saveGameState();
         updateUI();
-        alert("🦐 Новая креветка!");
+        alert("-1 SHRIM");
     }
 
     function buySlot() {
@@ -598,20 +516,20 @@
         slots++;
         saveGameState();
         updateUI();
-        alert(`🐚 Новый слот! Теперь ${slots}/${CONFIG.maxSlots}`);
+        alert(`-${price} SHRIM`);
     }
 
     function sellShrimp(index) {
         const shrimp = shrimps[index];
         if (!shrimp) return;
         if (!shrimp.completed && shrimp.level < CONFIG.maxLevel) {
-            alert("Креветка ещё не достигла Нирваны!");
+            alert("Креветка ещё не готова");
             return;
         }
 
         const reward = shrimp.invested + CONFIG.bonusReward;
         if (reserveBalance < reward) {
-            alert(`❌ В резерве недостаточно средств!\nНужно: ${reward}\nДоступно: ${reserveBalance.toFixed(4)}`);
+            alert(`Недостаточно средств в резерве`);
             return;
         }
 
@@ -620,7 +538,7 @@
         shrimps.splice(index, 1);
         saveGameState();
         updateUI();
-        alert(`💰 Креветка продана!\n+${reward} SHRIM`);
+        alert(`+${reward} SHRIM`);
     }
 
     async function withdrawFunds() {
@@ -637,32 +555,8 @@
         const confirm = window.confirm(`Вывести ${amount.toFixed(4)} SHRIM на ${userAddress}?`);
         if (!confirm) return;
 
-        const payload = {
-            type: "cosmwasm_execute",
-            chainId: "2024",
-            contract: CONFIG.shrimContract,
-            msg: {
-                transfer: {
-                    recipient: userAddress,
-                    amount: (amount * 10 ** CONFIG.decimals).toString()
-                }
-            }
-        };
-
-        const deeplink = `axiomesign://${btoa(JSON.stringify(payload))}`;
+        alert("Подтвердите транзакцию в Axiome Wallet");
         
-        if (confirm("Открыть Axiome Wallet для подтверждения?")) {
-            window.location.href = deeplink;
-            alert("Подтвердите транзакцию в Axiome Wallet");
-        } else {
-            const qrDiv = document.getElementById('qrCode');
-            qrDiv.innerHTML = '';
-            new QRCode(qrDiv, { text: deeplink, width: 200, height: 200 });
-            document.getElementById('qrContainer').style.display = 'block';
-            document.getElementById('deeplinkText').innerText = deeplink;
-            alert("Отсканируйте QR-код в Axiome Wallet для подтверждения");
-        }
-
         shrimBalance = 0;
         saveGameState();
         updateUI();
@@ -671,11 +565,10 @@
             await fetchShrimBalance();
             await fetchReserveBalance();
             updateUI();
-            alert("Баланс обновлён");
         }, 3000);
     }
 
-    // ========== СОХРАНЕНИЕ ПРОГРЕССА ==========
+    // ========== СОХРАНЕНИЕ ==========
     function saveGameState() {
         if (!userAddress) return;
         const data = { shrimBalance, shrimps, slots };
@@ -702,15 +595,7 @@
         while (shrimps.length > slots) shrimps.pop();
     }
 
-    // ========== UI И ТАЙМЕРЫ ==========
-    function showFloatingEffect(text, color) {
-        const div = document.createElement('div');
-        div.innerText = text;
-        div.style.cssText = `position:fixed;left:50%;bottom:40%;transform:translateX(-50%);color:${color};font-weight:bold;font-size:20px;background:rgba(0,0,0,0.7);padding:4px 16px;border-radius:40px;pointer-events:none;z-index:1000`;
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 400);
-    }
-
+    // ========== UI ==========
     function updateUI() {
         document.getElementById('shrimBalance').innerText = shrimBalance.toFixed(4);
         document.getElementById('slotInfo').innerText = `${shrimps.length}/${slots}`;
@@ -733,9 +618,7 @@
             if (isZen && !shrimp.completed) {
                 const rem = shrimp.zenUntil - now;
                 const h = Math.floor(rem / 3600);
-                const m = Math.floor((rem % 3600) / 60);
-                const s = rem % 60;
-                zenTimer = `<div class="timer-text">🧘 Дзен: ${h}ч ${m}м ${s}с</div>`;
+                zenTimer = `<div class="timer-text">🧘 Дзен: ${h}ч</div>`;
             }
 
             const progress = ((shrimp.level - 1) * CONFIG.clicksPerLevel + (shrimp.clicks || 0)) / (CONFIG.maxLevel * CONFIG.clicksPerLevel) * 100;
@@ -750,7 +633,6 @@
                         🕊️ Креветка ${i+1}<br>
                         Уровень ${shrimp.level}/${CONFIG.maxLevel}<br>
                         <div class="invested-text">💰 Вложено: ${invested} SHRIM</div>
-                        <small>🎁 Бонус: +${CONFIG.bonusReward} SHRIM</small>
                         <div class="shrimp-actions">
                             <button class="btn-sell" data-index="${i}">💰 Продать за ${invested + CONFIG.bonusReward} SHRIM</button>
                         </div>
@@ -766,7 +648,7 @@
                         ${zenTimer}
                         <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%;"></div></div>
                         <div class="shrimp-actions">
-                            <button class="btn-feed" data-index="${i}" ${feedDisabled ? 'disabled' : ''}>🍽️ Покормить (+1)</button>
+                            <button class="btn-feed" data-index="${i}" ${feedDisabled ? 'disabled' : ''}>🍽️ Кормить</button>
                         </div>
                     </div>
                 `;
@@ -796,50 +678,43 @@
         updateUI();
     }
 
-    function checkSavedConnection() {
-        const saved = localStorage.getItem('shrims_userAddress');
-        if (saved && saved.startsWith('axm1')) {
-            userAddress = saved;
-            document.getElementById('walletAddressDisplay').innerHTML = userAddress;
-            document.getElementById('walletAddressDisplay').style.display = 'block';
-            document.getElementById('connectionStatus').innerHTML = "🟢 Кошелёк подключён";
-            document.getElementById('connectionStatus').style.background = "#1F8A4C";
-            initGame();
-        }
-    }
-
     // ========== ЗАПУСК ==========
     if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
     }
 
-    // ОБНУЛЯЕМ ВСЁ ПРИ СТАРТЕ
-    resetAllData();
+    telegramUserId = getTelegramUserId();
+    document.getElementById('userIdDisplay').innerHTML = `👤 ${telegramUserId.slice(-10)}`;
+
+    // Обнуление
+    localStorage.removeItem('shrims_userAddress');
+    userAddress = null;
+    shrimBalance = 0;
+    reserveBalance = 0;
+    shrimps = [];
+    slots = 1;
+    updateUI();
 
     startTimerUpdate();
 
     document.getElementById('connectBtn').onclick = () => {
         showQRCode();
         setTimeout(() => {
-            if (!userAddress && confirm("Нет сохранённого адреса. Ввести адрес вручную для теста?")) {
-                const testAddr = prompt("Введите ваш Axiome адрес для теста (axm1...):");
-                if (testAddr && testAddr.startsWith('axm1')) {
-                    userAddress = testAddr;
+            if (!userAddress && confirm("Ввести адрес кошелька вручную?")) {
+                const addr = prompt("Введите Axiome адрес (axm1...):");
+                if (addr && addr.startsWith('axm1')) {
+                    userAddress = addr;
                     localStorage.setItem('shrims_userAddress', userAddress);
-                    document.getElementById('walletAddressDisplay').innerHTML = userAddress;
-                    document.getElementById('walletAddressDisplay').style.display = 'block';
                     document.getElementById('connectionStatus').innerHTML = "🟢 Кошелёк подключён";
                     document.getElementById('connectionStatus').style.background = "#1F8A4C";
-                    document.getElementById('qrContainer').style.display = 'none';
+                    hideQRCode();
                     initGame();
-                } else {
-                    alert("Неверный адрес. Должен начинаться с axm1");
                 }
             }
         }, 500);
     };
-    document.getElementById('copyBtn').onclick = copyDeeplink;
+    document.getElementById('backBtn').onclick = hideQRCode;
     document.getElementById('buyShrimpBtn').onclick = buyShrimp;
     document.getElementById('buySlotBtn').onclick = buySlot;
     document.getElementById('withdrawBtn').onclick = withdrawFunds;
