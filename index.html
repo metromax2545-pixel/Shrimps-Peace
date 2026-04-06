@@ -56,17 +56,6 @@
             margin-bottom: 20px;
             text-align: center;
         }
-        .btn-connect {
-            background: #D4AF37;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #1F3D33;
-            font-size: 16px;
-            margin: 0 5px;
-        }
         .status-badge {
             font-size: 11px;
             background: #2A5343;
@@ -244,16 +233,6 @@
         .hidden {
             display: none;
         }
-        .reset-btn {
-            background: #E35F2E;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            cursor: pointer;
-            margin-left: 8px;
-        }
     </style>
 </head>
 <body>
@@ -315,7 +294,7 @@
     
     // ========== ПОЛУЧЕНИЕ УНИКАЛЬНОГО ID ПОЛЬЗОВАТЕЛЯ ==========
     function getUserId() {
-        // 1. Пытаемся получить Telegram ID
+        // 1. Telegram WebApp (игра открыта через бота)
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
             const initData = tg.initDataUnsafe;
@@ -324,31 +303,32 @@
             }
         }
         
-        // 2. Пытаемся получить из URL параметра (для реферальных ссылок)
+        // 2. Параметр startapp из URL (реферальная ссылка)
         const urlParams = new URLSearchParams(window.location.search);
         const startapp = urlParams.get('startapp');
         if (startapp && startapp.startsWith('ref_')) {
-            // Это реферальная ссылка, но ID нового пользователя ещё не известен
-            // Сохраняем реферера
             const referrerId = startapp.substring(4);
             localStorage.setItem('shrimps_referrer', referrerId);
         }
         
-        // 3. Пытаемся получить сохранённый ID
+        // 3. Сохранённый ID в localStorage
         let userId = localStorage.getItem('shrimps_user_id');
         if (userId) {
             return userId;
         }
         
-        // 4. Создаём новый уникальный ID
+        // 4. Создаём новый ID
         userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
         localStorage.setItem('shrimps_user_id', userId);
         
-        // 5. Проверяем, есть ли реферер
+        // 5. Проверяем реферера
         const referrer = localStorage.getItem('shrimps_referrer');
         if (referrer) {
             console.log(`Новый пользователь ${userId} пришёл от ${referrer}`);
-            // Здесь можно начислить бонус рефереру
+            // Начисление бонуса рефереру
+            const referrerBonus = localStorage.getItem(`shrimps_bonus_${referrer}`);
+            const newBonus = (parseFloat(referrerBonus) || 0) + 5;
+            localStorage.setItem(`shrimps_bonus_${referrer}`, newBonus.toString());
             localStorage.removeItem('shrimps_referrer');
         }
         
@@ -364,7 +344,7 @@
     let slots = 1;
     let timerInterval = null;
     
-    // ========== СОХРАНЕНИЕ В LOCALSTORAGE (уникальный ключ) ==========
+    // ========== СОХРАНЕНИЕ (уникальный ключ) ==========
     function saveGame() {
         if (!userId) return;
         const gameData = {
@@ -375,7 +355,6 @@
             lastSave: Date.now()
         };
         localStorage.setItem(`shrimps_game_${userId}`, JSON.stringify(gameData));
-        console.log(`Игра сохранена для ${userId}:`, { shrimBalance, slots, shrimpsCount: shrimps.length });
     }
     
     function loadGame() {
@@ -389,7 +368,6 @@
                 shrimps = data.shrimps ?? [];
                 slots = data.slots ?? 1;
                 
-                // Восстанавливаем таймеры
                 const now = Math.floor(Date.now() / 1000);
                 for (const s of shrimps) {
                     if (s.zenUntil && s.zenUntil < now) {
@@ -399,13 +377,10 @@
                         s.invested = (s.level - 1) * CONFIG.clicksPerLevel + (s.clicks || 0);
                     }
                 }
-                console.log(`Игра загружена для ${userId}:`, { shrimBalance, slots, shrimpsCount: shrimps.length });
             } catch(e) {
-                console.error('Ошибка загрузки:', e);
                 resetGame();
             }
         } else {
-            console.log(`Новый пользователь ${userId}, создаём новую игру`);
             resetGame();
         }
         updateUI();
@@ -556,7 +531,7 @@
     function updateUI() {
         if (!userId) return;
         
-        document.getElementById('userIdDisplay').innerHTML = `👤 ${userId.slice(0, 12)}...`;
+        document.getElementById('userIdDisplay').innerHTML = `👤 ${userId.slice(-12)}`;
         document.getElementById('shrimBalance').innerText = shrimBalance.toFixed(4);
         document.getElementById('slotInfo').innerText = `${shrimps.length}/${slots}`;
         document.getElementById('reserveBalance').innerText = reserveBalance.toFixed(4);
@@ -584,13 +559,10 @@
         const buyShrimpBtn = document.getElementById('buyShrimpBtn');
         if (shrimps.length >= slots) {
             buyShrimpBtn.classList.add('disabled');
+        } else if (shrimBalance < 1) {
+            buyShrimpBtn.classList.add('disabled');
         } else {
             buyShrimpBtn.classList.remove('disabled');
-            if (shrimBalance < 1) {
-                buyShrimpBtn.classList.add('disabled');
-            } else {
-                buyShrimpBtn.classList.remove('disabled');
-            }
         }
         
         const container = document.getElementById('slotsContainer');
@@ -669,14 +641,12 @@
             const tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
-            console.log('Telegram WebApp инициализирован');
         }
     }
     
     // ========== ЗАПУСК ==========
     initTelegram();
     userId = getUserId();
-    console.log('User ID:', userId);
     loadGame();
     startTimerUpdate();
     
