@@ -41,14 +41,6 @@
             background-clip: text;
             color: transparent;
         }
-        .user-info {
-            background: #1F3D33;
-            padding: 6px 12px;
-            border-radius: 40px;
-            font-size: 11px;
-            color: #D4AF37;
-            font-family: monospace;
-        }
         .wallet-section {
             background: #E8DFCA;
             border-radius: 28px;
@@ -253,13 +245,24 @@
         .hidden {
             display: none;
         }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #D4AF37;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
 <div class="app">
     <div class="header">
         <div class="logo">🦐 SHRIMPS & PEACE</div>
-        <div class="user-info" id="userIdDisplay">👤 Загрузка...</div>
     </div>
 
     <div class="wallet-section">
@@ -280,8 +283,8 @@
     </div>
 
     <div class="action-buttons">
-        <button class="btn-deposit" id="depositBtn">💎 Пополнить (+100 SHRIM)</button>
-        <button class="btn-withdraw" id="withdrawBtn">💸 Вывести всё</button>
+        <button class="btn-deposit" id="depositBtn" disabled>💎 Пополнить (+100 SHRIM)</button>
+        <button class="btn-withdraw" id="withdrawBtn" disabled>💸 Вывести всё</button>
     </div>
 
     <div class="shrimps-section">
@@ -293,8 +296,8 @@
     </div>
 
     <div class="shop-grid">
-        <div class="shop-item" id="buyShrimpBtn">🦐 Новая креветка<br>1 SHRIM</div>
-        <div class="shop-item" id="buySlotBtn">🐚 Новый слот<br><span id="slotPrice">10</span> SHRIM</div>
+        <div class="shop-item" id="buyShrimpBtn" disabled>🦐 Новая креветка<br>1 SHRIM</div>
+        <div class="shop-item" id="buySlotBtn" disabled>🐚 Новый слот<br><span id="slotPrice">10</span> SHRIM</div>
     </div>
 
     <div class="reserve-info">
@@ -302,6 +305,7 @@
     </div>
 
     <div class="footer-note">
+        🔌 Сначала подключите кошелёк<br>
         🧘 1 нажатие = -1 SHRIM<br>
         📈 60 нажатий = +1 уровень → дзен 24ч<br>
         🎁 5 уровень → +30 SHRIM<br>
@@ -310,6 +314,7 @@
 </div>
 
 <script>
+    // ========== КОНФИГУРАЦИЯ ==========
     const CONFIG = {
         clicksPerLevel: 60,
         maxLevel: 5,
@@ -318,11 +323,13 @@
         zenSeconds: 24 * 60 * 60
     };
     
+    // ========== AXIOME API ==========
     const IDX_API = "https://api-idx.axiomechain.pro";
     const CHAIN_API = "https://api-chain.axiomechain.org";
     const SHRIM_CONTRACT = "axm13falgv7wf8v3pqcwhr7suvm8e8j0hu03fjmtwrh2vek2589tdazq5p0atj";
     const GAME_WALLET = "axm1x3uspfu07sgd26jyvexe7fkjekpynx3xt8n3ca";
     
+    // ========== ПЕРЕМЕННЫЕ ==========
     let userAddress = null;
     let sessionToken = null;
     let pollingInterval = null;
@@ -331,7 +338,9 @@
     let shrimps = [];
     let slots = 1;
     let timerInterval = null;
+    let isConnecting = false;
     
+    // ========== ОБЩИЙ РЕЗЕРВ ==========
     const RESERVE_KEY = 'shrimps_global_reserve';
     
     function getGlobalReserve() {
@@ -356,6 +365,7 @@
         return true;
     }
     
+    // ========== AXIOME CONNECT ==========
     async function createSession() {
         try {
             const response = await fetch(`${IDX_API}/connect/create_token`, { method: 'GET' });
@@ -363,6 +373,7 @@
             sessionToken = data.token;
             return sessionToken;
         } catch (error) {
+            console.error('Ошибка создания сессии:', error);
             return null;
         }
     }
@@ -370,7 +381,9 @@
     function openAxiomeWallet() {
         if (!sessionToken) return;
         window.location.href = `axiome://connect?token=${sessionToken}`;
-        setTimeout(() => alert('Если кошелёк не открылся, установите Axiome Wallet'), 1000);
+        setTimeout(() => {
+            alert('Если кошелёк не открылся:\n1. Установите Axiome Wallet\n2. Откройте игру в браузере кошелька');
+        }, 1000);
     }
     
     async function checkConnectionStatus() {
@@ -382,6 +395,7 @@
                 body: JSON.stringify({ token: sessionToken })
             });
             const data = await response.json();
+            
             if (data.status === 'connected') {
                 userAddress = data.account;
                 stopPolling();
@@ -416,34 +430,64 @@
             const data = await response.json();
             return parseInt(data.data?.balance || '0') / 1_000_000;
         } catch(e) {
+            console.warn('Ошибка получения баланса:', e);
             return 0;
         }
     }
     
     async function transferToGame(amount) {
-        alert(`💸 Перевод ${amount} SHRIM в игру...\nПодтвердите в кошельке`);
-        if (walletBalance >= amount) {
-            walletBalance -= amount;
-            gameBalance += amount;
-            saveGame();
-            updateUI();
-            alert(`+${amount} SHRIM на игровой счёт`);
-        } else {
-            alert("Недостаточно средств на кошельке");
+        if (!userAddress) {
+            alert("Сначала подключите кошелёк");
+            return false;
         }
+        
+        isConnecting = true;
+        updateUI();
+        
+        alert(`💸 Перевод ${amount} SHRIM в игру...\nПодтвердите транзакцию в Axiome Wallet`);
+        
+        setTimeout(async () => {
+            if (walletBalance >= amount) {
+                walletBalance -= amount;
+                gameBalance += amount;
+                saveGame();
+                await updateRealBalances();
+                alert(`✅ +${amount} SHRIM на игровой счёт`);
+            } else {
+                alert(`❌ Недостаточно средств на кошельке\nДоступно: ${walletBalance.toFixed(4)} SHRIM`);
+            }
+            isConnecting = false;
+            updateUI();
+        }, 1000);
+        
+        return true;
     }
     
     async function withdrawFromGame() {
+        if (!userAddress) {
+            alert("Сначала подключите кошелёк");
+            return;
+        }
         if (gameBalance <= 0) {
             alert("Нет средств на игровом счете");
             return;
         }
-        alert(`💸 Вывод ${gameBalance.toFixed(4)} SHRIM на кошелёк...\nПодтвердите в кошельке`);
-        walletBalance += gameBalance;
-        gameBalance = 0;
-        saveGame();
+        
+        isConnecting = true;
         updateUI();
-        alert("Средства выведены на кошелёк");
+        
+        const amount = gameBalance;
+        alert(`💸 Вывод ${amount.toFixed(4)} SHRIM на кошелёк...\nПодтвердите транзакцию в Axiome Wallet`);
+        
+        setTimeout(async () => {
+            walletBalance += amount;
+            gameBalance = 0;
+            saveGame();
+            await updateRealBalances();
+            alert(`✅ Средства выведены на кошелёк`);
+            isConnecting = false;
+            updateUI();
+        }, 1000);
     }
     
     async function onWalletConnected() {
@@ -452,82 +496,62 @@
         document.getElementById('connectBtn').innerHTML = "✅ Подключён";
         document.getElementById('connectBtn').disabled = true;
         
-        walletBalance = await getSHRIMBalance(userAddress);
+        await updateRealBalances();
+        
+        document.getElementById('depositBtn').disabled = false;
+        document.getElementById('withdrawBtn').disabled = false;
+        document.getElementById('buyShrimpBtn').disabled = false;
+        document.getElementById('buySlotBtn').disabled = false;
+        
         loadGame();
         updateUI();
     }
     
+    async function updateRealBalances() {
+        if (userAddress) {
+            walletBalance = await getSHRIMBalance(userAddress);
+        }
+        document.getElementById('walletBalance').innerText = walletBalance.toFixed(4);
+        document.getElementById('reserveBalance').innerText = getGlobalReserve().toFixed(4);
+    }
+    
     async function connectWallet() {
-        const token = await createSession();
-        if (!token) {
-            alert('Ошибка подключения');
+        if (isConnecting) {
+            alert("Подключение уже выполняется...");
             return;
         }
+        
+        isConnecting = true;
+        updateUI();
+        
+        const token = await createSession();
+        if (!token) {
+            alert('Ошибка подключения к Axiome Connect');
+            isConnecting = false;
+            updateUI();
+            return;
+        }
+        
         openAxiomeWallet();
         startPolling();
-        alert('Открывается Axiome Wallet...\nПодтвердите подключение');
-    }
-    
-    // ========== УНИКАЛЬНЫЙ ID ПОЛЬЗОВАТЕЛЯ (Telegram или локальный) ==========
-    function getUserId() {
-        // Приоритет 1: Telegram ID (если игра открыта через бота)
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            const initData = tg.initDataUnsafe;
-            if (initData && initData.user && initData.user.id) {
-                const telegramId = `telegram_${initData.user.id}`;
-                console.log('ID из Telegram:', telegramId);
-                return telegramId;
+        alert('Открывается Axiome Wallet...\nПодтвердите подключение в кошельке');
+        
+        setTimeout(() => {
+            if (!userAddress) {
+                isConnecting = false;
+                updateUI();
             }
-        }
-        
-        // Приоритет 2: сохранённый ID в localStorage
-        let userId = localStorage.getItem('shrimps_user_id');
-        if (userId) {
-            console.log('ID из localStorage:', userId);
-            return userId;
-        }
-        
-        // Приоритет 3: создаём новый ID
-        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-        localStorage.setItem('shrimps_user_id', userId);
-        console.log('Создан новый ID:', userId);
-        return userId;
+        }, 30000);
     }
     
-    // ========== ОБРАБОТКА РЕФЕРАЛЬНОЙ ССЫЛКИ ==========
-    function handleReferral() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const startapp = urlParams.get('startapp');
-        
-        if (startapp && startapp.startsWith('ref_')) {
-            const referrerId = startapp.substring(4);
-            const currentUserId = getUserId();
-            
-            // Проверяем, что это не сам пользователь
-            if (referrerId !== currentUserId) {
-                const key = `shrims_referral_${currentUserId}`;
-                if (!localStorage.getItem(key)) {
-                    localStorage.setItem(key, referrerId);
-                    console.log(`Реферал ${currentUserId} пришёл от ${referrerId}`);
-                    
-                    // Начисляем бонус рефереру (5 SHRIM)
-                    const bonusKey = `shrims_bonus_${referrerId}`;
-                    const currentBonus = parseFloat(localStorage.getItem(bonusKey) || 0);
-                    localStorage.setItem(bonusKey, (currentBonus + 5).toString());
-                }
-            }
-        }
-    }
-    
+    // ========== ID ПОЛЬЗОВАТЕЛЯ ==========
     let userId = null;
     
-    // ========== СОХРАНЕНИЕ (уникальный ключ для каждого пользователя) ==========
+    // ========== СОХРАНЕНИЕ ==========
     function saveGame() {
         if (!userId) return;
         const gameData = { gameBalance, shrimps, slots };
         localStorage.setItem(`shrimps_game_${userId}`, JSON.stringify(gameData));
-        console.log(`Сохранено для ${userId}:`, gameData);
     }
     
     function loadGame() {
@@ -536,7 +560,7 @@
         if (saved) {
             try {
                 const data = JSON.parse(saved);
-                gameBalance = data.gameBalance ?? 500;
+                gameBalance = data.gameBalance ?? 0;
                 shrimps = data.shrimps ?? [];
                 slots = data.slots ?? 1;
                 const now = Math.floor(Date.now() / 1000);
@@ -544,17 +568,15 @@
                     if (s.zenUntil && s.zenUntil < now) s.zenUntil = null;
                     if (s.invested === undefined) s.invested = (s.level - 1) * CONFIG.clicksPerLevel + (s.clicks || 0);
                 }
-                console.log(`Загружено для ${userId}:`, { gameBalance, slots, shrimpsCount: shrimps.length });
             } catch(e) { resetGame(); }
         } else { 
-            console.log(`Новый пользователь ${userId}, создаём новую игру`);
-            resetGame(); 
+            resetGame();
         }
         updateUI();
     }
     
     function resetGame() {
-        gameBalance = 500;
+        gameBalance = 0;
         shrimps = [];
         slots = 1;
         saveGame();
@@ -644,8 +666,6 @@
     
     // ========== ОБНОВЛЕНИЕ UI ==========
     function updateUI() {
-        if (!userId) return;
-        document.getElementById('userIdDisplay').innerHTML = `👤 ${userId.slice(-12)}`;
         document.getElementById('gameBalance').innerText = gameBalance.toFixed(4);
         document.getElementById('walletBalance').innerText = walletBalance.toFixed(4);
         document.getElementById('reserveBalance').innerText = getGlobalReserve().toFixed(4);
@@ -659,11 +679,16 @@
             buySlotBtn.classList.add('hidden');
         } else {
             buySlotBtn.classList.remove('hidden');
-            buySlotBtn.classList.toggle('disabled', gameBalance < nextSlotPrice);
+            buySlotBtn.classList.toggle('disabled', gameBalance < nextSlotPrice || !userAddress);
         }
         
         const buyShrimpBtn = document.getElementById('buyShrimpBtn');
-        buyShrimpBtn.classList.toggle('disabled', shrimps.length >= slots || gameBalance < 1);
+        buyShrimpBtn.classList.toggle('disabled', shrimps.length >= slots || gameBalance < 1 || !userAddress);
+        
+        const depositBtn = document.getElementById('depositBtn');
+        const withdrawBtn = document.getElementById('withdrawBtn');
+        if (depositBtn) depositBtn.disabled = !userAddress || isConnecting;
+        if (withdrawBtn) withdrawBtn.disabled = !userAddress || gameBalance <= 0 || isConnecting;
         
         const container = document.getElementById('slotsContainer');
         container.innerHTML = '';
@@ -682,7 +707,7 @@
                 }
                 const percent = ((shrimp.level - 1) * CONFIG.clicksPerLevel + (shrimp.clicks || 0)) / (CONFIG.maxLevel * CONFIG.clicksPerLevel) * 100;
                 const neededClicks = CONFIG.clicksPerLevel - (shrimp.clicks || 0);
-                const feedDisabled = (shrimp.completed || shrimp.level >= CONFIG.maxLevel || isZen) ? 'disabled' : '';
+                const feedDisabled = (shrimp.completed || shrimp.level >= CONFIG.maxLevel || isZen || !userAddress) ? 'disabled' : '';
                 const investedAmount = shrimp.invested || ((shrimp.level - 1) * CONFIG.clicksPerLevel + (shrimp.clicks || 0));
                 
                 if (shrimp.completed) {
@@ -693,7 +718,7 @@
                             Уровень ${shrimp.level}/${CONFIG.maxLevel}<br>
                             <div class="invested-text">💰 Вложено: ${investedAmount} SHRIM</div>
                             <div class="shrimp-actions">
-                                <button class="btn-sell" data-index="${i}">💰 Продать за ${investedAmount + CONFIG.bonusReward} SHRIM</button>
+                                <button class="btn-sell" data-index="${i}" ${!userAddress ? 'disabled' : ''}>💰 Продать за ${investedAmount + CONFIG.bonusReward} SHRIM</button>
                             </div>
                         </div>
                     `;
@@ -723,9 +748,23 @@
         });
     }
     
+    async function updateRealTimeBalances() {
+        if (userAddress) {
+            const newBalance = await getSHRIMBalance(userAddress);
+            if (newBalance !== walletBalance) {
+                walletBalance = newBalance;
+                updateUI();
+            }
+        }
+        updateUI();
+    }
+    
     function startTimerUpdate() {
         if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(updateUI, 1000);
+        timerInterval = setInterval(() => {
+            updateRealTimeBalances();
+            updateUI();
+        }, 5000);
     }
     
     function initTelegram() {
@@ -735,10 +774,27 @@
         }
     }
     
+    // ========== ПОЛУЧЕНИЕ ID ПОЛЬЗОВАТЕЛЯ ==========
+    function getUserId() {
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            const initData = tg.initDataUnsafe;
+            if (initData && initData.user && initData.user.id) {
+                return `telegram_${initData.user.id}`;
+            }
+        }
+        
+        let userId = localStorage.getItem('shrims_user_id');
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+            localStorage.setItem('shrims_user_id', userId);
+        }
+        return userId;
+    }
+    
     // ========== ЗАПУСК ==========
     initTelegram();
     userId = getUserId();
-    handleReferral();  // Обработка реферальной ссылки
     loadGame();
     startTimerUpdate();
     
@@ -747,6 +803,8 @@
     document.getElementById('withdrawBtn').onclick = withdraw;
     document.getElementById('buyShrimpBtn').onclick = buyShrimp;
     document.getElementById('buySlotBtn').onclick = buySlot;
+    
+    updateUI();
 </script>
 </body>
 </html>
