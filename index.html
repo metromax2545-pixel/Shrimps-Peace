@@ -468,22 +468,66 @@
         alert('Открывается Axiome Wallet...\nПодтвердите подключение');
     }
     
+    // ========== УНИКАЛЬНЫЙ ID ПОЛЬЗОВАТЕЛЯ (Telegram или локальный) ==========
     function getUserId() {
-        if (userAddress) return userAddress;
-        let userId = localStorage.getItem('shrimps_user_id');
-        if (!userId) {
-            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-            localStorage.setItem('shrimps_user_id', userId);
+        // Приоритет 1: Telegram ID (если игра открыта через бота)
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            const initData = tg.initDataUnsafe;
+            if (initData && initData.user && initData.user.id) {
+                const telegramId = `telegram_${initData.user.id}`;
+                console.log('ID из Telegram:', telegramId);
+                return telegramId;
+            }
         }
+        
+        // Приоритет 2: сохранённый ID в localStorage
+        let userId = localStorage.getItem('shrimps_user_id');
+        if (userId) {
+            console.log('ID из localStorage:', userId);
+            return userId;
+        }
+        
+        // Приоритет 3: создаём новый ID
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+        localStorage.setItem('shrimps_user_id', userId);
+        console.log('Создан новый ID:', userId);
         return userId;
+    }
+    
+    // ========== ОБРАБОТКА РЕФЕРАЛЬНОЙ ССЫЛКИ ==========
+    function handleReferral() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const startapp = urlParams.get('startapp');
+        
+        if (startapp && startapp.startsWith('ref_')) {
+            const referrerId = startapp.substring(4);
+            const currentUserId = getUserId();
+            
+            // Проверяем, что это не сам пользователь
+            if (referrerId !== currentUserId) {
+                const key = `shrims_referral_${currentUserId}`;
+                if (!localStorage.getItem(key)) {
+                    localStorage.setItem(key, referrerId);
+                    console.log(`Реферал ${currentUserId} пришёл от ${referrerId}`);
+                    
+                    // Начисляем бонус рефереру (5 SHRIM)
+                    const bonusKey = `shrims_bonus_${referrerId}`;
+                    const currentBonus = parseFloat(localStorage.getItem(bonusKey) || 0);
+                    localStorage.setItem(bonusKey, (currentBonus + 5).toString());
+                }
+            }
+        }
     }
     
     let userId = null;
     
+    // ========== СОХРАНЕНИЕ (уникальный ключ для каждого пользователя) ==========
     function saveGame() {
         if (!userId) return;
         const gameData = { gameBalance, shrimps, slots };
         localStorage.setItem(`shrimps_game_${userId}`, JSON.stringify(gameData));
+        console.log(`Сохранено для ${userId}:`, gameData);
     }
     
     function loadGame() {
@@ -500,8 +544,12 @@
                     if (s.zenUntil && s.zenUntil < now) s.zenUntil = null;
                     if (s.invested === undefined) s.invested = (s.level - 1) * CONFIG.clicksPerLevel + (s.clicks || 0);
                 }
+                console.log(`Загружено для ${userId}:`, { gameBalance, slots, shrimpsCount: shrimps.length });
             } catch(e) { resetGame(); }
-        } else { resetGame(); }
+        } else { 
+            console.log(`Новый пользователь ${userId}, создаём новую игру`);
+            resetGame(); 
+        }
         updateUI();
     }
     
@@ -512,6 +560,7 @@
         saveGame();
     }
     
+    // ========== ИГРОВЫЕ МЕХАНИКИ ==========
     function feedShrimp(index) {
         const shrimp = shrimps[index];
         if (!shrimp) return;
@@ -593,6 +642,7 @@
         withdrawFromGame();
     }
     
+    // ========== ОБНОВЛЕНИЕ UI ==========
     function updateUI() {
         if (!userId) return;
         document.getElementById('userIdDisplay').innerHTML = `👤 ${userId.slice(-12)}`;
@@ -685,8 +735,10 @@
         }
     }
     
+    // ========== ЗАПУСК ==========
     initTelegram();
     userId = getUserId();
+    handleReferral();  // Обработка реферальной ссылки
     loadGame();
     startTimerUpdate();
     
