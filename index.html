@@ -310,7 +310,6 @@
 </div>
 
 <script>
-    // ========== КОНФИГУРАЦИЯ ==========
     const CONFIG = {
         clicksPerLevel: 60,
         maxLevel: 5,
@@ -319,7 +318,6 @@
         zenSeconds: 24 * 60 * 60
     };
     
-    // ========== AXIOME CONNECT API ==========
     const IDX_API = "https://api-idx.axiomechain.pro";
     const CHAIN_API = "https://api-chain.axiomechain.org";
     const SHRIM_CONTRACT = "axm13falgv7wf8v3pqcwhr7suvm8e8j0hu03fjmtwrh2vek2589tdazq5p0atj";
@@ -328,13 +326,12 @@
     let userAddress = null;
     let sessionToken = null;
     let pollingInterval = null;
-    let gameBalance = 0;        // баланс в игре (тратится без подписей)
-    let walletBalance = 0;       // баланс на реальном кошельке
+    let gameBalance = 0;
+    let walletBalance = 0;
     let shrimps = [];
     let slots = 1;
     let timerInterval = null;
     
-    // ========== ОБЩИЙ РЕЗЕРВ ==========
     const RESERVE_KEY = 'shrimps_global_reserve';
     
     function getGlobalReserve() {
@@ -359,7 +356,6 @@
         return true;
     }
     
-    // ========== AXIOME CONNECT ==========
     async function createSession() {
         try {
             const response = await fetch(`${IDX_API}/connect/create_token`, { method: 'GET' });
@@ -367,7 +363,6 @@
             sessionToken = data.token;
             return sessionToken;
         } catch (error) {
-            console.error('Ошибка создания сессии:', error);
             return null;
         }
     }
@@ -375,9 +370,7 @@
     function openAxiomeWallet() {
         if (!sessionToken) return;
         window.location.href = `axiome://connect?token=${sessionToken}`;
-        setTimeout(() => {
-            alert('Если кошелёк не открылся, установите Axiome Wallet');
-        }, 1000);
+        setTimeout(() => alert('Если кошелёк не открылся, установите Axiome Wallet'), 1000);
     }
     
     async function checkConnectionStatus() {
@@ -428,9 +421,7 @@
     }
     
     async function transferToGame(amount) {
-        // Здесь будет реальная транзакция
         alert(`💸 Перевод ${amount} SHRIM в игру...\nПодтвердите в кошельке`);
-        // Имитация успешного перевода
         if (walletBalance >= amount) {
             walletBalance -= amount;
             gameBalance += amount;
@@ -477,7 +468,6 @@
         alert('Открывается Axiome Wallet...\nПодтвердите подключение');
     }
     
-    // ========== ПОЛУЧЕНИЕ ID ПОЛЬЗОВАТЕЛЯ ==========
     function getUserId() {
         if (userAddress) return userAddress;
         let userId = localStorage.getItem('shrimps_user_id');
@@ -490,14 +480,9 @@
     
     let userId = null;
     
-    // ========== СОХРАНЕНИЕ ==========
     function saveGame() {
         if (!userId) return;
-        const gameData = {
-            gameBalance: gameBalance,
-            shrimps: shrimps,
-            slots: slots
-        };
+        const gameData = { gameBalance, shrimps, slots };
         localStorage.setItem(`shrimps_game_${userId}`, JSON.stringify(gameData));
     }
     
@@ -507,7 +492,7 @@
         if (saved) {
             try {
                 const data = JSON.parse(saved);
-                gameBalance = data.gameBalance ?? 100;
+                gameBalance = data.gameBalance ?? 500;
                 shrimps = data.shrimps ?? [];
                 slots = data.slots ?? 1;
                 const now = Math.floor(Date.now() / 1000);
@@ -521,13 +506,12 @@
     }
     
     function resetGame() {
-        gameBalance = 100;
+        gameBalance = 500;
         shrimps = [];
         slots = 1;
         saveGame();
     }
     
-    // ========== ИГРОВЫЕ МЕХАНИКИ (тратят gameBalance) ==========
     function feedShrimp(index) {
         const shrimp = shrimps[index];
         if (!shrimp) return;
@@ -599,26 +583,16 @@
     }
     
     function deposit() {
-        if (!userAddress) {
-            alert("Сначала подключите кошелёк");
-            return;
-        }
+        if (!userAddress) { alert("Сначала подключите кошелёк"); return; }
         transferToGame(100);
     }
     
     function withdraw() {
-        if (!userAddress) {
-            alert("Сначала подключите кошелёк");
-            return;
-        }
-        if (gameBalance <= 0) {
-            alert("Нет средств на игровом счете");
-            return;
-        }
+        if (!userAddress) { alert("Сначала подключите кошелёк"); return; }
+        if (gameBalance <= 0) { alert("Нет средств на игровом счете"); return; }
         withdrawFromGame();
     }
     
-    // ========== ОБНОВЛЕНИЕ UI ==========
     function updateUI() {
         if (!userId) return;
         document.getElementById('userIdDisplay').innerHTML = `👤 ${userId.slice(-12)}`;
@@ -711,7 +685,6 @@
         }
     }
     
-    // ========== ЗАПУСК ==========
     initTelegram();
     userId = getUserId();
     loadGame();
