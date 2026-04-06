@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Shrimps & Peace — Тестовый режим</title>
+    <title>Shrimps & Peace</title>
     <style>
         * {
             margin: 0;
@@ -41,12 +41,13 @@
             background-clip: text;
             color: transparent;
         }
-        .mode-badge {
-            background: #2A6B8F;
-            padding: 4px 12px;
-            border-radius: 20px;
+        .user-info {
+            background: #1F3D33;
+            padding: 6px 12px;
+            border-radius: 40px;
             font-size: 11px;
-            color: white;
+            color: #D4AF37;
+            font-family: monospace;
         }
         .wallet-section {
             background: #E8DFCA;
@@ -65,10 +66,6 @@
             color: #1F3D33;
             font-size: 16px;
             margin: 0 5px;
-        }
-        .btn-test {
-            background: #2A6B8F;
-            color: white;
         }
         .status-badge {
             font-size: 11px;
@@ -244,17 +241,18 @@
             display: inline-block;
             margin-bottom: 6px;
         }
-        .test-warning {
-            background: #E35F2E;
-            color: white;
-            padding: 8px;
-            border-radius: 20px;
-            font-size: 11px;
-            text-align: center;
-            margin-bottom: 16px;
-        }
         .hidden {
             display: none;
+        }
+        .reset-btn {
+            background: #E35F2E;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-left: 8px;
         }
     </style>
 </head>
@@ -262,19 +260,12 @@
 <div class="app">
     <div class="header">
         <div class="logo">🦐 SHRIMPS & PEACE</div>
-        <div class="mode-badge" id="modeBadge">🧪 ТЕСТОВЫЙ РЕЖИМ</div>
-    </div>
-
-    <div class="test-warning" id="testWarning">
-        🧪 ТЕСТОВЫЙ РЕЖИМ — все монеты виртуальные<br>
-        Прогресс сохраняется автоматически
+        <div class="user-info" id="userIdDisplay">👤 Загрузка...</div>
     </div>
 
     <div class="wallet-section">
-        <div class="wallet-label">🔌 Подключение</div>
-        <button class="btn-connect btn-test" id="testModeBtn">🧪 Тестовый режим</button>
-        <button class="btn-connect" id="realModeBtn">🔗 Режим блокчейна</button>
-        <div id="connectionStatus" class="status-badge">🧪 ТЕСТОВЫЙ РЕЖИМ</div>
+        <div class="wallet-label">🧪 ТЕСТОВЫЙ РЕЖИМ</div>
+        <div id="connectionStatus" class="status-badge">✅ Данные сохраняются для каждого пользователя</div>
     </div>
 
     <div class="stats">
@@ -308,7 +299,7 @@
         📈 60 нажатий = +1 уровень → дзен 24 часа<br>
         🎁 На 5 уровне — бонус +30 SHRIM<br>
         💰 Продажа креветки 5 уровня: 330 SHRIM<br>
-        🧪 Тестовый режим — прогресс сохраняется
+        👤 Данные сохраняются отдельно для каждого пользователя
     </div>
 </div>
 
@@ -322,29 +313,74 @@
         zenSeconds: 24 * 60 * 60
     };
     
-    // ========== ПЕРЕМЕННЫЕ ==========
-    let isTestMode = true;
-    let userAddress = "test_user";
+    // ========== ПОЛУЧЕНИЕ УНИКАЛЬНОГО ID ПОЛЬЗОВАТЕЛЯ ==========
+    function getUserId() {
+        // 1. Пытаемся получить Telegram ID
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            const initData = tg.initDataUnsafe;
+            if (initData && initData.user && initData.user.id) {
+                return `telegram_${initData.user.id}`;
+            }
+        }
+        
+        // 2. Пытаемся получить из URL параметра (для реферальных ссылок)
+        const urlParams = new URLSearchParams(window.location.search);
+        const startapp = urlParams.get('startapp');
+        if (startapp && startapp.startsWith('ref_')) {
+            // Это реферальная ссылка, но ID нового пользователя ещё не известен
+            // Сохраняем реферера
+            const referrerId = startapp.substring(4);
+            localStorage.setItem('shrimps_referrer', referrerId);
+        }
+        
+        // 3. Пытаемся получить сохранённый ID
+        let userId = localStorage.getItem('shrimps_user_id');
+        if (userId) {
+            return userId;
+        }
+        
+        // 4. Создаём новый уникальный ID
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+        localStorage.setItem('shrimps_user_id', userId);
+        
+        // 5. Проверяем, есть ли реферер
+        const referrer = localStorage.getItem('shrimps_referrer');
+        if (referrer) {
+            console.log(`Новый пользователь ${userId} пришёл от ${referrer}`);
+            // Здесь можно начислить бонус рефереру
+            localStorage.removeItem('shrimps_referrer');
+        }
+        
+        return userId;
+    }
+    
+    let userId = null;
+    
+    // ========== ПЕРЕМЕННЫЕ ИГРЫ ==========
     let shrimBalance = 0;
     let reserveBalance = 10000;
     let shrimps = [];
     let slots = 1;
     let timerInterval = null;
     
-    // ========== СОХРАНЕНИЕ В LOCALSTORAGE ==========
+    // ========== СОХРАНЕНИЕ В LOCALSTORAGE (уникальный ключ) ==========
     function saveGame() {
+        if (!userId) return;
         const gameData = {
             shrimBalance: shrimBalance,
             reserveBalance: reserveBalance,
             shrimps: shrimps,
-            slots: slots
+            slots: slots,
+            lastSave: Date.now()
         };
-        localStorage.setItem('shrimps_test_game', JSON.stringify(gameData));
-        console.log('Игра сохранена:', gameData);
+        localStorage.setItem(`shrimps_game_${userId}`, JSON.stringify(gameData));
+        console.log(`Игра сохранена для ${userId}:`, { shrimBalance, slots, shrimpsCount: shrimps.length });
     }
     
     function loadGame() {
-        const saved = localStorage.getItem('shrimps_test_game');
+        if (!userId) return;
+        const saved = localStorage.getItem(`shrimps_game_${userId}`);
         if (saved) {
             try {
                 const data = JSON.parse(saved);
@@ -363,12 +399,13 @@
                         s.invested = (s.level - 1) * CONFIG.clicksPerLevel + (s.clicks || 0);
                     }
                 }
-                console.log('Игра загружена:', { shrimBalance, slots, shrimpsCount: shrimps.length });
+                console.log(`Игра загружена для ${userId}:`, { shrimBalance, slots, shrimpsCount: shrimps.length });
             } catch(e) {
                 console.error('Ошибка загрузки:', e);
                 resetGame();
             }
         } else {
+            console.log(`Новый пользователь ${userId}, создаём новую игру`);
             resetGame();
         }
         updateUI();
@@ -380,31 +417,6 @@
         shrimps = [];
         slots = 1;
         saveGame();
-    }
-    
-    // ========== ТЕСТОВЫЙ РЕЖИМ ==========
-    function enableTestMode() {
-        isTestMode = true;
-        userAddress = "test_user";
-        
-        document.getElementById('modeBadge').innerHTML = "🧪 ТЕСТОВЫЙ РЕЖИМ";
-        document.getElementById('modeBadge').style.background = "#2A6B8F";
-        document.getElementById('testWarning').style.display = "block";
-        document.getElementById('connectionStatus').innerHTML = "🧪 ТЕСТОВЫЙ РЕЖИМ";
-        document.getElementById('connectionStatus').style.background = "#2A6B8F";
-        
-        loadGame();
-        updateUI();
-    }
-    
-    function enableRealMode() {
-        isTestMode = false;
-        document.getElementById('modeBadge').innerHTML = "⛓️ РЕЖИМ БЛОКЧЕЙНА";
-        document.getElementById('modeBadge').style.background = "#1F8A4C";
-        document.getElementById('testWarning').style.display = "none";
-        document.getElementById('connectionStatus').innerHTML = "⭕ Не подключён";
-        document.getElementById('connectionStatus').style.background = "#2A5343";
-        alert("⛓️ Режим блокчейна\nВ разработке");
     }
     
     // ========== ИГРОВЫЕ МЕХАНИКИ ==========
@@ -542,6 +554,9 @@
     
     // ========== ОБНОВЛЕНИЕ UI ==========
     function updateUI() {
+        if (!userId) return;
+        
+        document.getElementById('userIdDisplay').innerHTML = `👤 ${userId.slice(0, 12)}...`;
         document.getElementById('shrimBalance').innerText = shrimBalance.toFixed(4);
         document.getElementById('slotInfo').innerText = `${shrimps.length}/${slots}`;
         document.getElementById('reserveBalance').innerText = reserveBalance.toFixed(4);
@@ -552,7 +567,7 @@
             slotPriceSpan.innerText = nextSlotPrice;
         }
         
-        // Кнопка "Купить слот" — пропадает, когда все слоты куплены
+        // Кнопка "Купить слот"
         const buySlotBtn = document.getElementById('buySlotBtn');
         if (slots >= CONFIG.maxSlots) {
             buySlotBtn.classList.add('hidden');
@@ -571,6 +586,11 @@
             buyShrimpBtn.classList.add('disabled');
         } else {
             buyShrimpBtn.classList.remove('disabled');
+            if (shrimBalance < 1) {
+                buyShrimpBtn.classList.add('disabled');
+            } else {
+                buyShrimpBtn.classList.remove('disabled');
+            }
         }
         
         const container = document.getElementById('slotsContainer');
@@ -643,23 +663,26 @@
         }, 1000);
     }
     
-    // ========== ЗАПУСК ==========
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
+    // ========== ИНИЦИАЛИЗАЦИЯ TELEGRAM ==========
+    function initTelegram() {
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            console.log('Telegram WebApp инициализирован');
+        }
     }
     
-    document.getElementById('testModeBtn').onclick = () => {
-        enableTestMode();
-        location.reload();
-    };
-    document.getElementById('realModeBtn').onclick = enableRealMode;
+    // ========== ЗАПУСК ==========
+    initTelegram();
+    userId = getUserId();
+    console.log('User ID:', userId);
+    loadGame();
+    startTimerUpdate();
+    
     document.getElementById('buyShrimpBtn').onclick = buyShrimp;
     document.getElementById('buySlotBtn').onclick = buySlot;
     document.getElementById('withdrawBtn').onclick = withdrawFunds;
-    
-    enableTestMode();
-    startTimerUpdate();
 </script>
 </body>
 </html>
