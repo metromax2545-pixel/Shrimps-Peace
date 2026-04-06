@@ -274,17 +274,15 @@
     </div>
 
     <div class="footer-note">
-        🧘 1 нажатие = тратится 1 SHRIM<br>
-        📈 60 нажатий = +1 уровень → дзен 24 часа<br>
-        🎁 На 5 уровне — бонус +30 SHRIM<br>
-        💰 Продажа креветки 5 уровня: 330 SHRIM<br>
-        👤 Данные сохраняются отдельно для каждого пользователя<br>
-        💎 Резерв игры — общий для всех игроков
+        🧘 1 нажатие = -1 SHRIM<br>
+        📈 60 нажатий = +1 уровень → дзен 24ч<br>
+        🎁 5 уровень → +30 SHRIM<br>
+        💰 Продажа → +330 SHRIM<br>
+        👤 Свои данные у каждого
     </div>
 </div>
 
 <script>
-    // ========== КОНФИГУРАЦИЯ ==========
     const CONFIG = {
         clicksPerLevel: 60,
         maxLevel: 5,
@@ -293,41 +291,30 @@
         zenSeconds: 24 * 60 * 60
     };
     
-    // ========== ОБЩИЙ РЕЗЕРВ (ДЛЯ ВСЕХ ИГРОКОВ) ==========
     const RESERVE_KEY = 'shrimps_global_reserve';
     
     function getGlobalReserve() {
         const saved = localStorage.getItem(RESERVE_KEY);
-        if (saved !== null) {
-            return parseFloat(saved);
-        }
-        return 10000; // Начальный резерв 10,000 SHRIM
+        return saved !== null ? parseFloat(saved) : 10000;
     }
     
     function setGlobalReserve(value) {
         localStorage.setItem(RESERVE_KEY, value.toString());
         const reserveElement = document.getElementById('reserveBalance');
-        if (reserveElement) {
-            reserveElement.innerText = value.toFixed(4);
-        }
+        if (reserveElement) reserveElement.innerText = value.toFixed(4);
     }
     
     function addToGlobalReserve(amount) {
-        const current = getGlobalReserve();
-        setGlobalReserve(current + amount);
+        setGlobalReserve(getGlobalReserve() + amount);
     }
     
     function subtractFromGlobalReserve(amount) {
         const current = getGlobalReserve();
-        if (current < amount) {
-            console.warn('Недостаточно средств в резерве!');
-            return false;
-        }
+        if (current < amount) return false;
         setGlobalReserve(current - amount);
         return true;
     }
     
-    // ========== ПОЛУЧЕНИЕ УНИКАЛЬНОГО ID ПОЛЬЗОВАТЕЛЯ ==========
     function getUserId() {
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
@@ -337,51 +324,25 @@
             }
         }
         
-        const urlParams = new URLSearchParams(window.location.search);
-        const startapp = urlParams.get('startapp');
-        if (startapp && startapp.startsWith('ref_')) {
-            const referrerId = startapp.substring(4);
-            localStorage.setItem('shrimps_referrer', referrerId);
-        }
-        
         let userId = localStorage.getItem('shrimps_user_id');
-        if (userId) {
-            return userId;
-        }
+        if (userId) return userId;
         
         userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
         localStorage.setItem('shrimps_user_id', userId);
-        
-        const referrer = localStorage.getItem('shrimps_referrer');
-        if (referrer) {
-            console.log(`Новый пользователь ${userId} пришёл от ${referrer}`);
-            const referrerBonus = localStorage.getItem(`shrimps_bonus_${referrer}`);
-            const newBonus = (parseFloat(referrerBonus) || 0) + 5;
-            localStorage.setItem(`shrimps_bonus_${referrer}`, newBonus.toString());
-            localStorage.removeItem('shrimps_referrer');
-        }
-        
         return userId;
     }
     
     let userId = null;
-    
-    // ========== ПЕРЕМЕННЫЕ ИГРЫ ==========
     let shrimBalance = 0;
     let shrimps = [];
     let slots = 1;
     let timerInterval = null;
     
-    // ========== СОХРАНЕНИЕ (уникальный ключ) ==========
     function saveGame() {
         if (!userId) return;
-        const gameData = {
-            shrimBalance: shrimBalance,
-            shrimps: shrimps,
-            slots: slots,
-            lastSave: Date.now()
-        };
-        localStorage.setItem(`shrimps_game_${userId}`, JSON.stringify(gameData));
+        localStorage.setItem(`shrimps_game_${userId}`, JSON.stringify({
+            shrimBalance, shrimps, slots, lastSave: Date.now()
+        }));
     }
     
     function loadGame() {
@@ -393,22 +354,13 @@
                 shrimBalance = data.shrimBalance ?? 1000;
                 shrimps = data.shrimps ?? [];
                 slots = data.slots ?? 1;
-                
                 const now = Math.floor(Date.now() / 1000);
                 for (const s of shrimps) {
-                    if (s.zenUntil && s.zenUntil < now) {
-                        s.zenUntil = null;
-                    }
-                    if (s.invested === undefined) {
-                        s.invested = (s.level - 1) * CONFIG.clicksPerLevel + (s.clicks || 0);
-                    }
+                    if (s.zenUntil && s.zenUntil < now) s.zenUntil = null;
+                    if (s.invested === undefined) s.invested = (s.level - 1) * CONFIG.clicksPerLevel + (s.clicks || 0);
                 }
-            } catch(e) {
-                resetGame();
-            }
-        } else {
-            resetGame();
-        }
+            } catch(e) { resetGame(); }
+        } else { resetGame(); }
         updateUI();
     }
     
@@ -419,36 +371,21 @@
         saveGame();
     }
     
-    // ========== ИГРОВЫЕ МЕХАНИКИ ==========
     function feedShrimp(index) {
         const shrimp = shrimps[index];
         if (!shrimp) return;
-        
-        if (shrimp.completed) {
-            alert("Креветка уже достигла Нирваны! Продайте её.");
-            return;
-        }
-        
-        if (shrimp.level >= CONFIG.maxLevel) {
-            alert("Креветка уже достигла максимального уровня!");
-            return;
-        }
+        if (shrimp.completed) { alert("Готова к продаже"); return; }
+        if (shrimp.level >= CONFIG.maxLevel) { alert("Макс. уровень"); return; }
         
         const now = Math.floor(Date.now() / 1000);
         if (shrimp.zenUntil && shrimp.zenUntil > now) {
-            const hoursLeft = Math.ceil((shrimp.zenUntil - now) / 3600);
-            alert(`Креветка в дзене! Осталось ${hoursLeft} часов.`);
+            alert(`Дзен: ${Math.ceil((shrimp.zenUntil - now) / 3600)}ч`);
             return;
         }
-        
-        if (shrimBalance < 1) {
-            alert("Недостаточно SHRIM для кормления!");
-            return;
-        }
+        if (shrimBalance < 1) { alert("Не хватает SHRIM"); return; }
         
         shrimBalance -= 1;
         addToGlobalReserve(1);
-        
         shrimp.clicks = (shrimp.clicks || 0) + 1;
         shrimp.invested = (shrimp.level - 1) * CONFIG.clicksPerLevel + (shrimp.clicks || 0);
         
@@ -456,108 +393,64 @@
             shrimp.level++;
             shrimp.clicks = 0;
             shrimp.zenUntil = now + CONFIG.zenSeconds;
-            
             if (shrimp.level >= CONFIG.maxLevel) {
                 shrimp.completed = true;
                 if (subtractFromGlobalReserve(CONFIG.bonusReward)) {
                     shrimBalance += CONFIG.bonusReward;
-                    alert(`🕊️ Креветка ${index+1} достигла Нирваны!\n+${CONFIG.bonusReward} SHRIM бонус!`);
-                } else {
-                    alert(`❌ Недостаточно средств в резерве для бонуса!`);
+                    alert(`+${CONFIG.bonusReward} SHRIM`);
                 }
-            } else {
-                alert(`🦐 Креветка ${index+1} достигла ${shrimp.level} уровня!\n🧘 Дзен на 24 часа.`);
             }
         }
-        
         saveGame();
         updateUI();
-        
-        const floatDiv = document.createElement('div');
-        floatDiv.innerText = '-1 SHRIM';
-        floatDiv.style.cssText = 'position:fixed;left:50%;bottom:40%;transform:translateX(-50%);color:#FFA56E;font-weight:bold;font-size:20px;background:rgba(0,0,0,0.7);padding:4px 16px;border-radius:40px;pointer-events:none;z-index:1000';
-        document.body.appendChild(floatDiv);
-        setTimeout(() => floatDiv.remove(), 400);
     }
     
     function buyShrimp() {
-        if (shrimps.length >= slots) {
-            alert("Нет свободных слотов. Купите новый слот.");
-            return;
-        }
-        if (shrimBalance < 1) {
-            alert("Нужен 1 SHRIM");
-            return;
-        }
-        
+        if (shrimps.length >= slots) { alert("Нет свободных слотов"); return; }
+        if (shrimBalance < 1) { alert("Нужен 1 SHRIM"); return; }
         shrimBalance -= 1;
         addToGlobalReserve(1);
         shrimps.push({ level: 1, clicks: 0, completed: false, zenUntil: null, invested: 0 });
         saveGame();
         updateUI();
-        alert("🦐 Новая креветка!");
+        alert("-1 SHRIM");
     }
     
     function buySlot() {
-        if (slots >= CONFIG.maxSlots) {
-            alert("Максимум слотов уже достигнут!");
-            return;
-        }
+        if (slots >= CONFIG.maxSlots) { alert("Все слоты куплены"); return; }
         const price = 10 + (slots - 1) * 10;
-        if (shrimBalance < price) {
-            alert(`Нужно ${price} SHRIM`);
-            return;
-        }
-        
+        if (shrimBalance < price) { alert(`Нужно ${price} SHRIM`); return; }
         shrimBalance -= price;
         addToGlobalReserve(price);
         slots++;
         saveGame();
         updateUI();
-        alert(`🐚 Новый слот! Теперь ${slots}/${CONFIG.maxSlots} слотов.`);
+        alert(`-${price} SHRIM`);
     }
     
     function sellShrimp(index) {
         const shrimp = shrimps[index];
         if (!shrimp) return;
-        
-        if (!shrimp.completed && shrimp.level < CONFIG.maxLevel) {
-            alert("Креветка ещё не достигла Нирваны!");
-            return;
-        }
-        
+        if (!shrimp.completed && shrimp.level < CONFIG.maxLevel) { alert("Креветка ещё не готова"); return; }
         const reward = shrimp.invested + CONFIG.bonusReward;
-        
-        if (!subtractFromGlobalReserve(reward)) {
-            alert(`❌ В резерве игры недостаточно средств!\nНужно: ${reward} SHRIM\nДоступно: ${getGlobalReserve().toFixed(4)} SHRIM`);
-            return;
-        }
-        
+        if (!subtractFromGlobalReserve(reward)) { alert("В резерве недостаточно средств"); return; }
         shrimBalance += reward;
         shrimps.splice(index, 1);
-        
         saveGame();
         updateUI();
-        alert(`💰 Креветка продана!\n+${reward} SHRIM`);
+        alert(`+${reward} SHRIM`);
     }
     
     function withdrawFunds() {
-        if (shrimBalance <= 0) {
-            alert("Нет средств для вывода");
-            return;
-        }
-        
-        const amount = shrimBalance;
-        alert(`🧪 ТЕСТОВЫЙ РЕЖИМ: Вывод ${amount.toFixed(4)} SHRIM (виртуально)\nВ реальном режиме средства поступят на кошелёк.`);
+        if (shrimBalance <= 0) { alert("Нет средств"); return; }
+        alert(`Вывод ${shrimBalance.toFixed(4)} SHRIM`);
         shrimBalance = 0;
         saveGame();
         updateUI();
     }
     
-    // ========== ОБНОВЛЕНИЕ UI ==========
     function updateUI() {
         if (!userId) return;
-        
         document.getElementById('userIdDisplay').innerHTML = `👤 ${userId.slice(-12)}`;
         document.getElementById('shrimBalance').innerText = shrimBalance.toFixed(4);
         document.getElementById('slotInfo').innerText = `${shrimps.length}/${slots}`;
@@ -565,30 +458,18 @@
         
         const nextSlotPrice = 10 + (slots - 1) * 10;
         const slotPriceSpan = document.getElementById('slotPrice');
-        if (slotPriceSpan) {
-            slotPriceSpan.innerText = nextSlotPrice;
-        }
+        if (slotPriceSpan) slotPriceSpan.innerText = nextSlotPrice;
         
         const buySlotBtn = document.getElementById('buySlotBtn');
         if (slots >= CONFIG.maxSlots) {
             buySlotBtn.classList.add('hidden');
         } else {
             buySlotBtn.classList.remove('hidden');
-            if (shrimBalance < nextSlotPrice) {
-                buySlotBtn.classList.add('disabled');
-            } else {
-                buySlotBtn.classList.remove('disabled');
-            }
+            buySlotBtn.classList.toggle('disabled', shrimBalance < nextSlotPrice);
         }
         
         const buyShrimpBtn = document.getElementById('buyShrimpBtn');
-        if (shrimps.length >= slots) {
-            buyShrimpBtn.classList.add('disabled');
-        } else if (shrimBalance < 1) {
-            buyShrimpBtn.classList.add('disabled');
-        } else {
-            buyShrimpBtn.classList.remove('disabled');
-        }
+        buyShrimpBtn.classList.toggle('disabled', shrimps.length >= slots || shrimBalance < 1);
         
         const container = document.getElementById('slotsContainer');
         container.innerHTML = '';
@@ -603,12 +484,8 @@
                 let zenTimerText = "";
                 if (isZen && !shrimp.completed && shrimp.level < CONFIG.maxLevel) {
                     const remaining = shrimp.zenUntil - nowSec;
-                    const hours = Math.floor(remaining / 3600);
-                    const minutes = Math.floor((remaining % 3600) / 60);
-                    const seconds = remaining % 60;
-                    zenTimerText = `<div class="timer-text">🧘 Дзен: ${hours}ч ${minutes}м ${seconds}с</div>`;
+                    zenTimerText = `<div class="timer-text">🧘 Дзен: ${Math.floor(remaining/3600)}ч</div>`;
                 }
-                
                 const percent = ((shrimp.level - 1) * CONFIG.clicksPerLevel + (shrimp.clicks || 0)) / (CONFIG.maxLevel * CONFIG.clicksPerLevel) * 100;
                 const neededClicks = CONFIG.clicksPerLevel - (shrimp.clicks || 0);
                 const feedDisabled = (shrimp.completed || shrimp.level >= CONFIG.maxLevel || isZen) ? 'disabled' : '';
@@ -621,7 +498,6 @@
                             🕊️ Креветка ${i+1}<br>
                             Уровень ${shrimp.level}/${CONFIG.maxLevel}<br>
                             <div class="invested-text">💰 Вложено: ${investedAmount} SHRIM</div>
-                            <small>🎁 Бонус: +${CONFIG.bonusReward} SHRIM</small>
                             <div class="shrimp-actions">
                                 <button class="btn-sell" data-index="${i}">💰 Продать за ${investedAmount + CONFIG.bonusReward} SHRIM</button>
                             </div>
@@ -637,7 +513,7 @@
                             ${zenTimerText}
                             <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%;"></div></div>
                             <div class="shrimp-actions">
-                                <button class="btn-feed" data-index="${i}" ${feedDisabled}>🍽️ Покормить (+1)</button>
+                                <button class="btn-feed" data-index="${i}" ${feedDisabled}>🍽️ Кормить</button>
                             </div>
                         </div>
                     `;
@@ -655,20 +531,16 @@
     
     function startTimerUpdate() {
         if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            updateUI();
-        }, 1000);
+        timerInterval = setInterval(updateUI, 1000);
     }
     
     function initTelegram() {
         if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-            tg.expand();
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
         }
     }
     
-    // ========== ЗАПУСК ==========
     initTelegram();
     userId = getUserId();
     loadGame();
