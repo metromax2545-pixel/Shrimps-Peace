@@ -56,6 +56,20 @@
             margin-bottom: 20px;
             text-align: center;
         }
+        .wallet-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .wallet-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 40px;
+            border: none;
+            background: #FFF8E6;
+            font-family: monospace;
+            font-size: 12px;
+        }
         .btn-connect {
             background: #D4AF37;
             border: none;
@@ -64,31 +78,7 @@
             font-weight: bold;
             cursor: pointer;
             color: #1F3D33;
-            width: 100%;
-            font-size: 16px;
-        }
-        .qr-container {
-            text-align: center;
-            margin-top: 15px;
-            padding: 15px;
-            background: white;
-            border-radius: 28px;
-            display: none;
-        }
-        .qr-code {
-            width: 160px;
-            height: 160px;
-            margin: 10px auto;
-        }
-        .btn-back {
-            background: #E35F2E;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
+            font-size: 14px;
         }
         .status-badge {
             font-size: 10px;
@@ -273,8 +263,19 @@
         .hidden {
             display: none;
         }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #D4AF37;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs2-fix@0.0.1/qrcode.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -284,11 +285,10 @@
     </div>
 
     <div class="wallet-section">
-        <div class="wallet-label">🔌 Axiome Connect</div>
-        <button class="btn-connect" id="connectBtn">📱 Подключить кошелёк</button>
-        <div id="qrContainer" class="qr-container">
-            <div id="qrCode" class="qr-code"></div>
-            <button class="btn-back" id="backBtn">◀ Назад</button>
+        <div class="wallet-label">🔌 Axiome Wallet</div>
+        <div class="wallet-input-group">
+            <input type="text" class="wallet-input" id="walletInput" placeholder="Введите ваш адрес axm1...">
+            <button class="btn-connect" id="connectBtn">Подключить</button>
         </div>
         <div id="connectionStatus" class="status-badge">⭕ Не подключён</div>
     </div>
@@ -320,10 +320,11 @@
     </div>
 
     <div class="instruction">
-        📱 <strong>КАК ПОДКЛЮЧИТЬ КОШЕЛЁК:</strong><br>
-        1. Нажмите "Подключить кошелёк"<br>
-        2. Отсканируйте QR-код в Axiome Wallet<br>
-        3. Подтвердите подключение
+        📱 <strong>КАК ПОЛУЧИТЬ АДРЕС:</strong><br>
+        1. Откройте Axiome Wallet<br>
+        2. Нажмите на свой адрес вверху<br>
+        3. Скопируйте адрес (начинается с axm1...)<br>
+        4. Вставьте его в поле выше
     </div>
 
     <div class="footer-note">
@@ -337,6 +338,7 @@
 <script>
     const CONFIG = {
         chainApi: "https://api-chain.axiomechain.org",
+        explorerApi: "https://axiomechain.org",
         shrimContract: "axm13falgv7wf8v3pqcwhr7suvm8e8j0hu03fjmtwrh2vek2589tdazq5p0atj",
         gameWallet: "axm1x3uspfu07sgd26jyvexe7fkjekpynx3xt8n3ca",
         decimals: 6,
@@ -372,27 +374,66 @@
         return savedId;
     }
 
-    // ========== КОРОТКИЙ QR (только адрес игры) ==========
-    function showQRCode() {
-        const gameUrl = window.location.href.split('?')[0];
-        const container = document.getElementById('qrContainer');
-        const qrDiv = document.getElementById('qrCode');
-
-        qrDiv.innerHTML = '';
-        new QRCode(qrDiv, {
-            text: gameUrl,
-            width: 160,
-            height: 160,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-        });
-
-        container.style.display = 'block';
+    // ========== ПРОВЕРКА АДРЕСА И ПОЛУЧЕНИЕ БАЛАНСА ==========
+    async function checkAddressAndGetBalance(address) {
+        if (!address || !address.startsWith('axm1')) {
+            return { valid: false, error: "Неверный адрес. Должен начинаться с axm1" };
+        }
+        
+        try {
+            // Проверяем через обозреватель Axiome Chain
+            const query = { balance: { address: address } };
+            const base64Query = btoa(JSON.stringify(query));
+            const response = await fetch(`${CONFIG.chainApi}/cosmwasm/wasm/v1/contract/${CONFIG.shrimContract}/smart/${base64Query}`);
+            const data = await response.json();
+            
+            if (data?.data?.balance !== undefined) {
+                const balance = parseInt(data.data.balance) / 10 ** CONFIG.decimals;
+                return { valid: true, balance: balance };
+            } else {
+                return { valid: true, balance: 0 };
+            }
+        } catch (error) {
+            console.warn("Ошибка проверки адреса:", error);
+            return { valid: false, error: "Ошибка подключения к блокчейну" };
+        }
     }
 
-    function hideQRCode() {
-        document.getElementById('qrContainer').style.display = 'none';
+    async function connectWallet() {
+        const inputAddress = document.getElementById('walletInput').value.trim();
+        
+        if (!inputAddress) {
+            alert("Введите адрес кошелька");
+            return;
+        }
+        
+        document.getElementById('connectionStatus').innerHTML = "🔄 Проверка...";
+        document.getElementById('connectionStatus').style.background = "#2A6B8F";
+        
+        const result = await checkAddressAndGetBalance(inputAddress);
+        
+        if (!result.valid) {
+            alert(result.error);
+            document.getElementById('connectionStatus').innerHTML = "⭕ Ошибка";
+            document.getElementById('connectionStatus').style.background = "#E35F2E";
+            return;
+        }
+        
+        userAddress = inputAddress;
+        shrimBalance = result.balance;
+        
+        localStorage.setItem('shrims_userAddress', userAddress);
+        document.getElementById('connectionStatus').innerHTML = "🟢 Кошелёк подключён";
+        document.getElementById('connectionStatus').style.background = "#1F8A4C";
+        document.getElementById('connectBtn').innerHTML = "✅ Подключён";
+        document.getElementById('connectBtn').disabled = true;
+        document.getElementById('walletInput').disabled = true;
+        
+        document.getElementById('shrimBalance').innerText = shrimBalance.toFixed(4);
+        
+        await fetchReserveBalance();
+        loadGameState();
+        updateUI();
     }
 
     // ========== ЗАГРУЗКА БАЛАНСОВ ==========
@@ -541,7 +582,7 @@
         alert(`+${reward} SHRIM`);
     }
 
-    async function withdrawFunds() {
+    function withdrawFunds() {
         if (!userAddress) {
             alert("Сначала подключите кошелёк");
             return;
@@ -555,17 +596,11 @@
         const confirm = window.confirm(`Вывести ${amount.toFixed(4)} SHRIM на ${userAddress}?`);
         if (!confirm) return;
 
-        alert("Подтвердите транзакцию в Axiome Wallet");
+        alert("Вывод средств:\nСредства будут отправлены на ваш кошелёк");
         
         shrimBalance = 0;
         saveGameState();
         updateUI();
-
-        setTimeout(async () => {
-            await fetchShrimBalance();
-            await fetchReserveBalance();
-            updateUI();
-        }, 3000);
     }
 
     // ========== СОХРАНЕНИЕ ==========
@@ -678,6 +713,20 @@
         updateUI();
     }
 
+    function checkSavedConnection() {
+        const saved = localStorage.getItem('shrims_userAddress');
+        if (saved && saved.startsWith('axm1')) {
+            userAddress = saved;
+            document.getElementById('walletInput').value = userAddress;
+            document.getElementById('walletInput').disabled = true;
+            document.getElementById('connectBtn').innerHTML = "✅ Подключён";
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('connectionStatus').innerHTML = "🟢 Кошелёк подключён";
+            document.getElementById('connectionStatus').style.background = "#1F8A4C";
+            initGame();
+        }
+    }
+
     // ========== ЗАПУСК ==========
     if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.ready();
@@ -687,34 +736,10 @@
     telegramUserId = getTelegramUserId();
     document.getElementById('userIdDisplay').innerHTML = `👤 ${telegramUserId.slice(-10)}`;
 
-    // Обнуление
-    localStorage.removeItem('shrims_userAddress');
-    userAddress = null;
-    shrimBalance = 0;
-    reserveBalance = 0;
-    shrimps = [];
-    slots = 1;
-    updateUI();
-
+    checkSavedConnection();
     startTimerUpdate();
 
-    document.getElementById('connectBtn').onclick = () => {
-        showQRCode();
-        setTimeout(() => {
-            if (!userAddress && confirm("Ввести адрес кошелька вручную?")) {
-                const addr = prompt("Введите Axiome адрес (axm1...):");
-                if (addr && addr.startsWith('axm1')) {
-                    userAddress = addr;
-                    localStorage.setItem('shrims_userAddress', userAddress);
-                    document.getElementById('connectionStatus').innerHTML = "🟢 Кошелёк подключён";
-                    document.getElementById('connectionStatus').style.background = "#1F8A4C";
-                    hideQRCode();
-                    initGame();
-                }
-            }
-        }, 500);
-    };
-    document.getElementById('backBtn').onclick = hideQRCode;
+    document.getElementById('connectBtn').onclick = connectWallet;
     document.getElementById('buyShrimpBtn').onclick = buyShrimp;
     document.getElementById('buySlotBtn').onclick = buySlot;
     document.getElementById('withdrawBtn').onclick = withdrawFunds;
